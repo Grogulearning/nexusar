@@ -456,7 +456,7 @@ function startDetection() {
   if (detectionInterval) clearInterval(detectionInterval);
   detecting = true;
   const badge = document.getElementById('statusBadge');
-  badge.textContent = 'Buscando imagen…';
+  badge.textContent = 'Cargando experiencias...';
   badge.classList.remove('found');
 
   if (!frameCanvas) {
@@ -465,49 +465,22 @@ function startDetection() {
     frameCanvas.width = 64; frameCanvas.height = 64;
   }
 
-  // Si no hay refHistogram (modo escaneo libre), buscar en todas las experiencias
-  if (!refHistogram) {
-    badge.textContent = 'Cargando experiencias...';
-    fetch('https://nexusar-backend-production.up.railway.app/api/get-experiences')
-      .then(r => r.json())
-      .then(experiences => {
-        if (experiences.length === 0) {
-          badge.textContent = 'No hay experiencias disponibles';
-          detecting = false;
-          return;
-        }
-        badge.textContent = 'Escaneando galería...';
-        detectAnyExperience(experiences);
-      })
-      .catch(e => {
-        console.error('Error:', e);
-        badge.textContent = 'Error al cargar experiencias';
+  // SIEMPRE buscar contra todas las experiencias del backend
+  fetch('https://nexusar-backend-production.up.railway.app/api/get-experiences')
+    .then(r => r.json())
+    .then(experiences => {
+      if (experiences.length === 0) {
+        badge.textContent = 'No hay experiencias disponibles';
         detecting = false;
-      });
-    return;
-  }
-
-  // Detección normal con imagen específica
-  detectionInterval = setInterval(() => {
-    if (!detecting) return;
-    const vid = document.getElementById('cam');
-    if (vid.readyState < 2) return;
-    frameCtx.drawImage(vid, 0, 0, 64, 64);
-    const framHist = getHistogram(frameCtx, 64, 64);
-    const score = histogramSimilarity(refHistogram, framHist);
-
-    if (score >= MATCH_THRESHOLD) {
-      badge.textContent = '✓ Imagen detectada!';
-      badge.classList.add('found');
-      clearInterval(detectionInterval);
+        return;
+      }
+      detectAnyExperience(experiences);
+    })
+    .catch(e => {
+      console.error('Error:', e);
+      badge.textContent = 'Error al cargar experiencias';
       detecting = false;
-      setTimeout(activateAR, 600);
-    } else {
-      const pct = Math.round(score * 100);
-      badge.textContent = `Buscando… ${pct}%`;
-      badge.classList.remove('found');
-    }
-  }, 400);
+    });
 }
 
 // Detectar cualquier experiencia de la galería
