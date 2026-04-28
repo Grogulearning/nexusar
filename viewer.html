@@ -400,7 +400,7 @@ function backToScanner() {
 //  DETECCIÓN DE IMAGEN
 // ════════════════════════════════════════════
 let refHistogram = null;
-const MATCH_THRESHOLD = 0.65; // bajado para mejor detección
+const MATCH_THRESHOLD = 0.50; // bajado para mejor detección
 let frameCanvas, frameCtx, refCanvas, refCtx;
 
 async function buildRefHistogram() {
@@ -455,7 +455,7 @@ function startDetection() {
   // Si no hay refHistogram (modo escaneo libre), buscar en todas las experiencias
   if (!refHistogram) {
     badge.textContent = 'Cargando experiencias...';
-    fetch('/.netlify/functions/get-experiences')
+    fetch('https://nexusar-backend-production.up.railway.app/api/get-experiences')
       .then(r => r.json())
       .then(experiences => {
         if (experiences.length === 0) {
