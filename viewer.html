@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>NexusAR — Visor</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0515;
+  --purple: #b14cf5;
+  --pink: #ff4d9e;
+  --cyan: #4dffdf;
+  --glass: rgba(255,255,255,0.05);
+  --glass-border: rgba(255,255,255,0.1);
+  --text: #ffffff;
+  --text-dim: rgba(255,255,255,0.6);
+}
+html, body { height: 100%; overflow: hidden; background: #000; font-family: 'Sora', sans-serif; color: var(--text); }
+
+/* ── PANTALLAS ── */
+.screen { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; }
+.screen.active { display: flex; }
+
+/* ── WELCOME ── */
+#welcome {
+  background: var(--bg);
+  background-image: 
+    radial-gradient(ellipse at 30% 20%, rgba(177,76,245,0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 70%, rgba(77,158,255,0.15) 0%, transparent 50%);
+  padding: 2rem;
+}
+.w-logo { 
+  font-size: 2.4rem; font-weight: 700; margin-bottom: 0.5rem; letter-spacing: -1px;
+  background: linear-gradient(135deg, var(--purple), var(--pink), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.w-exp-name {
+  font-size: 1.15rem; font-weight: 300; color: var(--text-dim); margin-bottom: 3rem;
+  text-align: center; max-width: 320px;
+}
+.w-card {
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 24px; padding: 2.5rem 2rem; max-width: 380px; width: 100%; 
+  text-align: center; margin-bottom: 2rem; backdrop-filter: blur(30px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.w-icon { 
+  font-size: 3.5rem; margin-bottom: 1.2rem;
+  filter: drop-shadow(0 0 30px rgba(177,76,245,0.6));
+}
+.w-title { 
+  font-size: 1.6rem; margin-bottom: 0.7rem; font-weight: 600;
+  background: linear-gradient(135deg, var(--purple), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.w-desc { font-size: 0.9rem; color: var(--text-dim); line-height: 1.8; font-weight: 300; }
+.w-desc strong { color: var(--text); font-weight: 600; }
+
+.btn-start {
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  color: white; border: none; border-radius: 16px;
+  padding: 1.1rem 2.8rem; font-family: 'Sora', sans-serif; font-size: 1.05rem; font-weight: 600;
+  cursor: pointer; width: 100%; max-width: 380px; transition: all .3s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  box-shadow: 0 8px 24px rgba(177,76,245,0.4);
+}
+.btn-start:hover { 
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(177,76,245,0.5);
+}
+
+.no-data {
+  text-align: center; color: var(--text-dim); font-size: 0.95rem; 
+  max-width: 320px; line-height: 1.8; padding: 2rem;
+}
+
+/* ── SCANNER ── */
+#scanner { background: #000; }
+
+video#cam { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+.scan-overlay {
+  position: absolute; inset: 0; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+}
+.scan-frame {
+  width: min(75vw, 320px); aspect-ratio: 1;
+  border: 2px solid rgba(177,76,245,0.5); border-radius: 20px;
+  position: relative;
+  box-shadow: 0 0 60px rgba(177,76,245,0.3);
+}
+.scan-frame::before, .scan-frame::after,
+.sf-bl, .sf-br {
+  content: ''; position: absolute; width: 28px; height: 28px;
+  border-color: var(--purple); border-style: solid;
+}
+.scan-frame::before { top: -2px; left: -2px; border-width: 4px 0 0 4px; border-radius: 12px 0 0 0; }
+.scan-frame::after  { top: -2px; right: -2px; border-width: 4px 4px 0 0; border-radius: 0 12px 0 0; }
+.sf-bl { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; border-radius: 0 0 0 12px; }
+.sf-br { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; border-radius: 0 0 12px 0; }
+
+.scan-line {
+  position: absolute; left: 10px; right: 10px; height: 3px;
+  background: linear-gradient(to right, transparent, var(--purple), transparent);
+  box-shadow: 0 0 20px var(--purple);
+  animation: scanMove 2.5s ease-in-out infinite;
+}
+@keyframes scanMove {
+  0%  { top: 10%; }
+  50% { top: 85%; }
+  100%{ top: 10%; }
+}
+
+.scan-hint {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
+  padding: 3.5rem 2rem 2rem; text-align: center;
+}
+.scan-hint p { font-size: 0.95rem; color: rgba(255,255,255,0.7); line-height: 1.7; }
+.scan-hint strong { 
+  background: linear-gradient(135deg, var(--purple), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.scan-top {
+  position: absolute; top: 0; left: 0; right: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+  padding: 1.2rem 1.8rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.scan-logo { 
+  font-size: 1.4rem; font-weight: 700; letter-spacing: -1px;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.btn-back {
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+  color: white; border-radius: 20px; padding: 6px 16px; font-size: 0.8rem; 
+  cursor: pointer; backdrop-filter: blur(10px); transition: all .2s;
+}
+.btn-back:hover { background: rgba(177,76,245,0.2); border-color: var(--purple); }
+
+/* Status */
+.status-badge {
+  position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(15px);
+  border: 1px solid var(--glass-border); border-radius: 24px;
+  padding: 7px 20px; font-size: 0.82rem; color: rgba(255,255,255,0.6);
+  white-space: nowrap; transition: all .3s;
+}
+.status-badge.found { 
+  border-color: var(--purple); color: var(--purple);
+  box-shadow: 0 0 30px rgba(177,76,245,0.4);
+}
+
+/* ── AR PLAYER ── */
+#arplayer { background: #000; }
+
+video#cam2 { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+.ar-vid-wrap {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  pointer-events: none;
+}
+video#arVid {
+  width: min(85vw, 420px); border-radius: 16px;
+  box-shadow: 0 0 80px rgba(177,76,245,0.5);
+  opacity: 0; transition: opacity .6s;
+}
+video#arVid.show { opacity: 1; }
+
+.ar-ring {
+  position: absolute; width: min(88vw, 440px); aspect-ratio: 16/9;
+  border: 3px solid rgba(177,76,245,0.4); border-radius: 18px;
+  animation: ringPulse 2.5s ease-out infinite; opacity: 0;
+  box-shadow: 0 0 60px rgba(177,76,245,0.3);
+}
+.ar-ring.show { opacity: 1; }
+@keyframes ringPulse {
+  0%   { transform: scale(1);    opacity: 0.7; }
+  100% { transform: scale(1.08); opacity: 0; }
+}
+
+.ar-controls {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.85), transparent);
+  padding: 2.5rem 2rem 2rem;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.ar-label { font-size: 0.85rem; color: rgba(255,255,255,0.5); }
+.ar-label strong { 
+  display: block; font-size: 1.05rem; margin-bottom: 4px;
+  background: linear-gradient(135deg, var(--purple), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.ar-btns { display: flex; gap: 0.6rem; }
+.ar-btn-sm {
+  background: rgba(255,255,255,0.1); backdrop-filter: blur(15px);
+  border: 1px solid rgba(255,255,255,0.2); color: white;
+  border-radius: 20px; padding: 8px 16px; font-size: 0.8rem; cursor: pointer;
+  transition: all .2s;
+}
+.ar-btn-sm:hover { 
+  background: rgba(177,76,245,0.2); border-color: var(--purple);
+  box-shadow: 0 0 20px rgba(177,76,245,0.3);
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 6rem; left: 50%; transform: translateX(-50%) translateY(30px);
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(15px);
+  color: white; border-radius: 24px; padding: 10px 24px;
+  font-size: 0.88rem; z-index: 999; opacity: 0; transition: all .3s; 
+  white-space: nowrap; border: 1px solid var(--glass-border);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ── WELCOME ── -->
+<div id="welcome" class="screen active">
+  <div class="w-logo">NexusAR</div>
+  <p class="w-exp-name" id="expName">Cargando experiencia…</p>
+
+  <div class="w-card" id="mainCard">
+    <div class="w-icon">🎯</div>
+    <div class="w-title">Escanear imagen AR</div>
+    <p class="w-desc">
+      Toca <strong>"Iniciar escaneo"</strong> y apunta tu cámara a cualquier imagen de la galería. El contenido AR aparecerá automáticamente cuando detecte la imagen.
+    </p>
+  </div>
+
+  <button class="btn-start" id="startBtn" onclick="startScanner()">
+    <span>📸</span> Iniciar escaneo
+  </button>
+
+  <div class="no-data" id="noData" style="display:none">
+    No se encontró la experiencia AR.<br><br>
+    Solicita el link correcto al creador del contenido.
+  </div>
+</div>
+
+<!-- ── SCANNER ── -->
+<div id="scanner" class="screen">
+  <video id="cam" autoplay playsinline muted></video>
+
+  <div class="scan-overlay">
+    <div class="scan-frame">
+      <div class="sf-bl"></div>
+      <div class="sf-br"></div>
+      <div class="scan-line"></div>
+    </div>
+  </div>
+
+  <div class="scan-top">
+    <div class="scan-logo">NexusAR</div>
+    <button class="btn-back" onclick="stopScanner()">← Salir</button>
+  </div>
+
+  <div class="status-badge" id="statusBadge">Buscando imagen…</div>
+
+  <div class="scan-hint">
+    <p>Apunta la cámara a la <strong>foto de referencia</strong>.<br>
+    El video aparecerá automáticamente.</p>
+  </div>
+</div>
+
+<!-- ── AR PLAYER ── -->
+<div id="arplayer" class="screen">
+  <video id="cam2" autoplay playsinline muted></video>
+
+  <div class="ar-vid-wrap">
+    <div class="ar-ring" id="arRing"></div>
+    <video id="arVid" playsinline loop></video>
+  </div>
+
+  <div class="ar-controls">
+    <div class="ar-label">
+      <strong id="arTitle">Reproduciendo</strong>
+      en realidad aumentada
+    </div>
+    <div class="ar-btns">
+      <button class="ar-btn-sm" onclick="toggleMute()">🔇</button>
+      <button class="ar-btn-sm" onclick="backToScanner()">📷</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════
+//  CARGAR DATOS DESDE URL
+// ════════════════════════════════════════════
+const hash = location.hash.slice(1);
+let payload = null;
+let expName = 'Experiencia AR';
+
+function loadExperience() {
+  if (!hash) {
+    // Sin hash = modo escaneo libre de cualquier imagen
+    payload = null;
+    expName = 'Escanear imagen';
+    document.getElementById('expName').textContent = 'Modo de escaneo libre';
+    document.getElementById('arTitle').textContent = 'Escaneo AR';
+    return;
+  }
+
+  try {
+    // Decodificar datos desde URL hash
+    const decoded = decodeURIComponent(atob(hash));
+    const data = JSON.parse(decoded);
+    
+    if (data.name && data.img && data.vid) {
+      payload = {
+        name: data.name,
+        imgURL: data.img,
+        vidURL: data.vid
+      };
+      expName = data.name;
+      document.getElementById('expName').textContent = expName;
+      document.getElementById('arTitle').textContent = expName;
+    } else {
+      showNoData();
+    }
+  } catch(e) {
+    console.error('Error al cargar experiencia:', e);
+    showNoData();
+  }
+}
+
+function showNoData() {
+  document.getElementById('mainCard').style.display = 'none';
+  document.getElementById('startBtn').style.display = 'none';
+  document.getElementById('noData').style.display = 'block';
+}
+
+loadExperience();
+
+// ════════════════════════════════════════════
+//  NAVEGACIÓN
+// ════════════════════════════════════════════
+function goTo(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function showToast(msg, dur = 2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+// ════════════════════════════════════════════
+//  CÁMARA
+// ════════════════════════════════════════════
+let stream = null;
+let detecting = false;
+let detectionInterval = null;
+
+async function startScanner() {
+  if (!payload) return;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    document.getElementById('cam').srcObject = stream;
+    document.getElementById('cam2').srcObject = stream;
+    goTo('scanner');
+    startDetection();
+  } catch(err) {
+    showToast('No se pudo acceder a la cámara. Revisa los permisos.');
+  }
+}
+
+function stopScanner() {
+  clearInterval(detectionInterval);
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  goTo('welcome');
+}
+
+function backToScanner() {
+  document.getElementById('arVid').pause();
+  document.getElementById('arVid').classList.remove('show');
+  document.getElementById('arRing').classList.remove('show');
+  goTo('scanner');
+  startDetection();
+}
+
+// ════════════════════════════════════════════
+//  DETECCIÓN DE IMAGEN
+// ════════════════════════════════════════════
+let refHistogram = null;
+const MATCH_THRESHOLD = 0.65; // bajado para mejor detección
+let frameCanvas, frameCtx, refCanvas, refCtx;
+
+async function buildRefHistogram() {
+  // Si no hay payload, modo escaneo libre (sin imagen de referencia específica)
+  if (!payload || !payload.imgURL) {
+    refHistogram = null; // Sin histograma de referencia
+    return;
+  }
+  
+  refCanvas = document.createElement('canvas');
+  refCtx = refCanvas.getContext('2d');
+  const img = new Image();
+  img.crossOrigin = 'anonymous'; // Para permitir CORS con Cloudinary
+  img.src = payload.imgURL;
+  await new Promise(res => img.onload = res);
+  refCanvas.width = 64; refCanvas.height = 64;
+  refCtx.drawImage(img, 0, 0, 64, 64);
+  refHistogram = getHistogram(refCtx, 64, 64);
+}
+
+function getHistogram(ctx, w, h) {
+  const data = ctx.getImageData(0, 0, w, h).data;
+  const hist = new Float32Array(64).fill(0);
+  for (let i = 0; i < data.length; i += 4) {
+    const lum = Math.round((0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2]) / 4);
+    hist[lum]++;
+  }
+  const total = w * h;
+  for (let i = 0; i < 64; i++) hist[i] /= total;
+  return hist;
+}
+
+function histogramSimilarity(a, b) {
+  let sum = 0;
+  for (let i = 0; i < 64; i++) sum += Math.min(a[i], b[i]);
+  return sum;
+}
+
+function startDetection() {
+  if (detectionInterval) clearInterval(detectionInterval);
+  detecting = true;
+  const badge = document.getElementById('statusBadge');
+  badge.textContent = 'Buscando imagen…';
+  badge.classList.remove('found');
+
+  if (!frameCanvas) {
+    frameCanvas = document.createElement('canvas');
+    frameCtx = frameCanvas.getContext('2d');
+    frameCanvas.width = 64; frameCanvas.height = 64;
+  }
+
+  // Si no hay refHistogram (modo escaneo libre), buscar en todas las experiencias
+  if (!refHistogram) {
+    badge.textContent = 'Cargando experiencias...';
+    fetch('/.netlify/functions/get-experiences')
+      .then(r => r.json())
+      .then(experiences => {
+        if (experiences.length === 0) {
+          badge.textContent = 'No hay experiencias disponibles';
+          detecting = false;
+          return;
+        }
+        badge.textContent = 'Escaneando galería...';
+        detectAnyExperience(experiences);
+      })
+      .catch(e => {
+        console.error('Error:', e);
+        badge.textContent = 'Error al cargar experiencias';
+        detecting = false;
+      });
+    return;
+  }
+
+  // Detección normal con imagen específica
+  detectionInterval = setInterval(() => {
+    if (!detecting) return;
+    const vid = document.getElementById('cam');
+    if (vid.readyState < 2) return;
+    frameCtx.drawImage(vid, 0, 0, 64, 64);
+    const framHist = getHistogram(frameCtx, 64, 64);
+    const score = histogramSimilarity(refHistogram, framHist);
+
+    if (score >= MATCH_THRESHOLD) {
+      badge.textContent = '✓ Imagen detectada!';
+      badge.classList.add('found');
+      clearInterval(detectionInterval);
+      detecting = false;
+      setTimeout(activateAR, 600);
+    } else {
+      const pct = Math.round(score * 100);
+      badge.textContent = `Buscando… ${pct}%`;
+      badge.classList.remove('found');
+    }
+  }, 400);
+}
+
+// Detectar cualquier experiencia de la galería
+async function detectAnyExperience(experiences) {
+  let expHistograms = [];
+  const badge = document.getElementById('statusBadge');
+  
+  // Pre-cargar histogramas de todas las experiencias
+  badge.textContent = 'Preparando detección...';
+  for (const exp of experiences) {
+    const testCanvas = document.createElement('canvas');
+    const testCtx = testCanvas.getContext('2d');
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = exp.imgURL;
+    
+    await new Promise(res => {
+      img.onload = () => {
+        testCanvas.width = 64;
+        testCanvas.height = 64;
+        testCtx.drawImage(img, 0, 0, 64, 64);
+        const hist = getHistogram(testCtx, 64, 64);
+        expHistograms.push({ exp, hist });
+        res();
+      };
+      img.onerror = res;
+    });
+  }
+  
+  badge.textContent = `Buscando entre ${experiences.length} imágenes...`;
+  
+  // Buscar match continuamente
+  detectionInterval = setInterval(() => {
+    if (!detecting) return;
+    const vid = document.getElementById('cam');
+    if (vid.readyState < 2) return;
+    
+    frameCtx.drawImage(vid, 0, 0, 64, 64);
+    const framHist = getHistogram(frameCtx, 64, 64);
+    
+    // Probar contra todas las experiencias
+    for (const { exp, hist } of expHistograms) {
+      const score = histogramSimilarity(hist, framHist);
+      
+      if (score >= MATCH_THRESHOLD) {
+        badge.textContent = `✓ ${exp.name} detectada!`;
+        badge.classList.add('found');
+        clearInterval(detectionInterval);
+        detecting = false;
+        
+        // Cargar esta experiencia
+        payload = {
+          name: exp.name,
+          imgURL: exp.imgURL,
+          vidURL: exp.vidURL
+        };
+        expName = exp.name;
+        document.getElementById('arTitle').textContent = expName;
+        
+        setTimeout(activateAR, 600);
+        return;
+      }
+    }
+  }, 400);
+}
+
+async function activateAR() {
+  const arVid = document.getElementById('arVid');
+  if (payload.vidURL) {
+    arVid.src = payload.vidURL; // URL de Cloudinary
+    arVid.muted = false; // Sonido activado
+  }
+  goTo('arplayer');
+  arVid.classList.add('show');
+  document.getElementById('arRing').classList.add('show');
+  
+  // Intentar reproducir con sonido
+  try { 
+    await arVid.play(); 
+  } catch(e) { 
+    // Si falla (algunos navegadores bloquean autoplay con sonido)
+    // intentar sin sonido y mostrar mensaje
+    console.log('Autoplay bloqueado, intentando sin sonido');
+    arVid.muted = true; 
+    await arVid.play();
+    showToast('⚠️ Toca el video para activar sonido');
+  }
+  
+  if (!arVid.muted) {
+    showToast('¡Video AR activado! 🎉');
+  }
+}
+
+let muted = false;
+function toggleMute() {
+  muted = !muted;
+  document.getElementById('arVid').muted = muted;
+  document.querySelector('.ar-btn-sm').textContent = muted ? '🔊' : '🔇';
+  showToast(muted ? 'Sonido desactivado' : 'Sonido activado');
+}
+
+// Siempre construir histograma (si hay payload) o preparar modo libre
+buildRefHistogram();
+</script>
+</body>
+</html>

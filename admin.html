@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusAR — Panel Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0515;
+  --purple: #b14cf5;
+  --pink: #ff4d9e;
+  --blue: #4d9eff;
+  --cyan: #4dffdf;
+  --glass: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --text: #ffffff;
+  --text-dim: rgba(255, 255, 255, 0.6);
+  --text-vdim: rgba(255, 255, 255, 0.4);
+  --danger: #ff5a5a;
+}
+
+html, body { 
+  min-height: 100vh; 
+  background: var(--bg);
+  background-image: 
+    radial-gradient(ellipse at 20% 10%, rgba(177, 76, 245, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 60%, rgba(77, 158, 255, 0.15) 0%, transparent 50%);
+  color: var(--text); 
+  font-family: 'Sora', sans-serif;
+}
+
+/* ── HEADER ── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.5rem 2rem; position: sticky; top: 0; z-index: 50;
+  backdrop-filter: blur(20px); background: rgba(10, 5, 21, 0.7);
+  border-bottom: 1px solid var(--glass-border);
+}
+.logo { 
+  font-size: 1.8rem; font-weight: 700; letter-spacing: -1px;
+  background: linear-gradient(135deg, var(--purple) 0%, var(--pink) 50%, var(--blue) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.btn-back {
+  background: var(--glass); border: 1px solid var(--glass-border);
+  padding: 8px 20px; border-radius: 20px; font-size: 0.85rem;
+  color: var(--text-dim); cursor: pointer; text-decoration: none;
+  backdrop-filter: blur(10px); transition: all .2s; display: inline-block;
+}
+.btn-back:hover { border-color: var(--purple); color: var(--text); }
+
+main { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+h1 { 
+  font-size: 2rem; margin-bottom: 0.5rem; font-weight: 700;
+  background: linear-gradient(135deg, var(--purple), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.subtitle { color: var(--text-dim); margin-bottom: 2rem; font-size: 0.95rem; }
+
+.stats {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem; margin-bottom: 2rem;
+}
+.stat-card {
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 16px; padding: 1.2rem; backdrop-filter: blur(20px);
+}
+.stat-label { font-size: 0.8rem; color: var(--text-dim); margin-bottom: 6px; }
+.stat-value { font-size: 1.8rem; font-weight: 700; }
+
+.exp-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.exp-card {
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 20px; overflow: hidden; backdrop-filter: blur(30px);
+  transition: all .3s;
+}
+.exp-card:hover { border-color: rgba(255,255,255,0.15); }
+
+.exp-thumb {
+  width: 100%; aspect-ratio: 16/9; object-fit: cover;
+  background: rgba(0,0,0,0.3);
+}
+
+.exp-body { padding: 1.2rem; }
+.exp-name { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.6rem; }
+.exp-date { font-size: 0.75rem; color: var(--text-vdim); margin-bottom: 0.8rem; }
+
+.exp-links {
+  display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;
+}
+.link-badge {
+  background: rgba(77,158,255,0.1); border: 1px solid rgba(77,158,255,0.3);
+  padding: 4px 10px; border-radius: 12px; font-size: 0.7rem;
+  color: var(--cyan); text-decoration: none; transition: all .2s;
+}
+.link-badge:hover { background: rgba(77,158,255,0.2); }
+
+.btn-delete {
+  width: 100%; padding: 10px; border-radius: 12px; border: none;
+  background: rgba(255,90,90,0.1); color: var(--danger);
+  border: 1px solid rgba(255,90,90,0.3);
+  font-family: 'Sora', sans-serif; font-size: 0.85rem; cursor: pointer;
+  transition: all .2s; font-weight: 500;
+}
+.btn-delete:hover {
+  background: var(--danger); color: white;
+  border-color: var(--danger);
+}
+
+.empty {
+  text-align: center; padding: 4rem 2rem; color: var(--text-dim);
+}
+.empty-icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.3; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">NexusAR</div>
+  <a href="index.html" class="btn-back">← Volver al panel</a>
+</header>
+
+<main>
+  <h1>Panel de Administración</h1>
+  <p class="subtitle">Gestiona tus experiencias AR y libera espacio en Cloudinary</p>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">Experiencias creadas</div>
+      <div class="stat-value" id="totalExp">0</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Espacio en Cloudinary</div>
+      <div class="stat-value" style="font-size: 1.3rem;">Ver dashboard →</div>
+    </div>
+  </div>
+
+  <div class="exp-grid" id="expGrid"></div>
+
+  <div class="empty" id="emptyState" style="display:none">
+    <div class="empty-icon">📦</div>
+    <p>No hay experiencias creadas aún.<br>
+    <a href="index.html" style="color: var(--cyan)">Crea tu primera experiencia →</a></p>
+  </div>
+</main>
+
+<script>
+// Verificar autenticación
+function checkAuth() {
+  const isAuthenticated = sessionStorage.getItem('nexusAR_auth') === 'true';
+  if (!isAuthenticated) {
+    alert('⛔ Acceso denegado. Debes iniciar sesión primero.');
+    window.location.href = 'creator.html';
+  }
+}
+checkAuth();
+
+const CLOUD_NAME = 'dc7luprai';
+
+// Cargar experiencias desde el backend
+async function loadExperiences() {
+  try {
+    const response = await fetch('/.netlify/functions/get-experiences');
+    const experiences = await response.json();
+    
+    document.getElementById('totalExp').textContent = experiences.length;
+
+    if (experiences.length === 0) {
+      document.getElementById('emptyState').style.display = 'block';
+      document.getElementById('expGrid').style.display = 'none';
+      return;
+    }
+
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('expGrid').style.display = 'grid';
+
+    const grid = document.getElementById('expGrid');
+    grid.innerHTML = experiences.map((exp, idx) => `
+      <div class="exp-card" id="card-${idx}">
+        <img src="${exp.imgURL}" class="exp-thumb" alt="${exp.name}">
+        <div class="exp-body">
+          <div class="exp-name">${exp.name}</div>
+          <div class="exp-date">Creado: ${new Date(exp.created).toLocaleDateString('es-MX')}</div>
+          <div class="exp-links">
+            <a href="${exp.viewerURL || '#'}" target="_blank" class="link-badge">🔗 Ver experiencia</a>
+            <a href="${exp.imgURL}" target="_blank" class="link-badge">📸 Imagen</a>
+            <a href="${exp.vidURL}" target="_blank" class="link-badge">🎬 Video</a>
+          </div>
+          <button class="btn-delete" onclick="deleteExperience('${exp.id}', '${exp.imgURL}', '${exp.vidURL}', ${idx})">
+            🗑 Eliminar de Cloudinary
+          </button>
+        </div>
+      </div>
+    `).join('');
+  } catch(error) {
+    console.error('Error cargando experiencias:', error);
+    document.getElementById('totalExp').textContent = 'Error';
+  }
+}
+
+// Eliminar experiencia
+async function deleteExperience(id, imgURL, vidURL, cardIdx) {
+  if (!confirm('¿Eliminar esta experiencia? Los archivos se borrarán permanentemente de Cloudinary.')) return;
+
+  const card = document.getElementById('card-' + cardIdx);
+  card.style.opacity = '0.5';
+  card.style.pointerEvents = 'none';
+
+  try {
+    // Eliminar del backend (incluye Cloudinary)
+    const response = await fetch('/.netlify/functions/delete-experience', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, imgURL, vidURL })
+    });
+
+    if (response.ok) {
+      alert('✓ Experiencia y archivos eliminados correctamente de Cloudinary');
+      loadExperiences(); // Recargar lista
+    } else {
+      const error = await response.json();
+      throw new Error(error.error || 'Error al eliminar');
+    }
+  } catch(e) {
+    alert('Error al eliminar: ' + e.message);
+    card.style.opacity = '1';
+    card.style.pointerEvents = 'auto';
+  }
+}
+
+function extractPublicID(url) {
+  // Extrae el public_id de una URL de Cloudinary
+  const match = url.match(/\/v\d+\/(.+)\.\w+$/);
+  return match ? match[1] : url;
+}
+
+loadExperiences();
+</script>
+</body>
+</html>

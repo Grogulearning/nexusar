@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusAR — Galería de Experiencias AR</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0515;
+  --purple: #b14cf5;
+  --pink: #ff4d9e;
+  --blue: #4d9eff;
+  --cyan: #4dffdf;
+  --glass: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --text: #ffffff;
+  --text-dim: rgba(255, 255, 255, 0.6);
+  --text-vdim: rgba(255, 255, 255, 0.4);
+}
+
+html, body { 
+  min-height: 100vh; 
+  background: var(--bg);
+  background-image: 
+    radial-gradient(ellipse at 20% 10%, rgba(177, 76, 245, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 60%, rgba(77, 158, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 90%, rgba(255, 77, 158, 0.1) 0%, transparent 50%);
+  color: var(--text); 
+  font-family: 'Sora', sans-serif;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.5rem 2rem; position: sticky; top: 0; z-index: 50;
+  backdrop-filter: blur(20px); background: rgba(10, 5, 21, 0.7);
+  border-bottom: 1px solid var(--glass-border);
+}
+.logo { 
+  font-size: 1.8rem; font-weight: 700; letter-spacing: -1px;
+  background: linear-gradient(135deg, var(--purple) 0%, var(--pink) 50%, var(--blue) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.header-btn {
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  color: white; border: none; border-radius: 14px;
+  padding: 10px 24px; font-size: 0.88rem; font-weight: 500;
+  cursor: pointer; text-decoration: none; display: inline-block;
+  transition: all .3s; box-shadow: 0 4px 16px rgba(177,76,245,0.3);
+}
+.header-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(177,76,245,0.4); }
+
+/* ── HERO ── */
+.hero {
+  text-align: center; padding: 5rem 2rem 4rem; position: relative;
+}
+.hero h1 { 
+  font-size: clamp(2.5rem, 8vw, 4.5rem); line-height: 1.1; margin-bottom: 1rem; font-weight: 700;
+}
+.hero h1 .gradient-text { 
+  background: linear-gradient(135deg, var(--purple), var(--pink), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero p { 
+  color: var(--text-dim); font-size: 1.1rem; max-width: 580px; 
+  margin: 0 auto 1rem; line-height: 1.7; font-weight: 300;
+}
+.hero-badge {
+  display: inline-block; background: rgba(77,255,223,0.1);
+  border: 1px solid rgba(77,255,223,0.3); border-radius: 20px;
+  padding: 6px 16px; font-size: 0.8rem; color: var(--cyan); margin-bottom: 3rem;
+}
+
+/* ── GALLERY ── */
+main { max-width: 1400px; margin: 0 auto; padding: 0 2rem 5rem; }
+
+.section-title {
+  font-size: 1.8rem; font-weight: 700; margin-bottom: 2rem;
+  background: linear-gradient(135deg, var(--purple), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gallery {
+  display: grid; 
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 2rem; margin-bottom: 3rem;
+}
+
+.exp-card {
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 24px; overflow: hidden; backdrop-filter: blur(30px);
+  transition: all .3s; cursor: pointer;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.exp-card:hover { 
+  border-color: rgba(255,255,255,0.2); 
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(177,76,245,0.2);
+}
+
+.exp-thumb {
+  width: 100%; aspect-ratio: 16/9; object-fit: cover;
+  background: rgba(0,0,0,0.3); position: relative;
+}
+.exp-overlay {
+  position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+  display: flex; align-items: flex-end; justify-content: center;
+  opacity: 0; transition: opacity .3s; padding: 1.5rem;
+}
+.exp-card:hover .exp-overlay { opacity: 1; }
+.play-btn {
+  background: rgba(255,255,255,0.95); color: var(--bg);
+  border-radius: 50%; width: 60px; height: 60px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; padding-left: 4px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+
+.exp-body { padding: 1.5rem; }
+.exp-name { font-weight: 600; font-size: 1.05rem; margin-bottom: 0.5rem; }
+.exp-date { font-size: 0.8rem; color: var(--text-vdim); }
+
+.empty {
+  text-align: center; padding: 5rem 2rem; color: var(--text-dim);
+}
+.empty-icon { font-size: 5rem; margin-bottom: 1.5rem; opacity: 0.3; }
+.empty h2 { font-size: 1.6rem; margin-bottom: 0.8rem; color: var(--text); }
+
+.loader {
+  text-align: center; padding: 4rem 2rem; color: var(--text-dim);
+}
+.loader-spinner {
+  width: 50px; height: 50px; margin: 0 auto 1rem;
+  border: 3px solid var(--glass-border);
+  border-top-color: var(--purple);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">NexusAR</div>
+  <a href="creator.html" class="header-btn">✨ Crear experiencia</a>
+</header>
+
+<div class="hero">
+  <h1>Explora el mundo<br>en <span class="gradient-text">Realidad Aumentada</span></h1>
+  <p>Escanea cualquier foto y descubre videos ocultos en AR. Sin apps, sin complicaciones.</p>
+  <div class="hero-badge">📱 Compatible con todos los celulares</div>
+</div>
+
+<main>
+  <h2 class="section-title">Experiencias disponibles</h2>
+
+  <div class="loader" id="loader">
+    <div class="loader-spinner"></div>
+    <p>Cargando experiencias…</p>
+  </div>
+
+  <div class="gallery" id="gallery" style="display:none"></div>
+
+  <div class="empty" id="empty" style="display:none">
+    <div class="empty-icon">🎭</div>
+    <h2>Aún no hay experiencias públicas</h2>
+    <p>Sé el primero en crear una experiencia AR.<br>
+    <a href="creator.html" style="color: var(--cyan)">Crear mi primera experiencia →</a></p>
+  </div>
+</main>
+
+<script>
+async function loadGallery() {
+  try {
+    const response = await fetch('/.netlify/functions/get-experiences');
+    const experiences = await response.json();
+
+    document.getElementById('loader').style.display = 'none';
+
+    if (experiences.length === 0) {
+      document.getElementById('empty').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('gallery').style.display = 'grid';
+
+    const gallery = document.getElementById('gallery');
+    gallery.innerHTML = experiences.map(exp => `
+      <div class="exp-card" onclick="openExperience('${exp.shortURL || ''}', '${exp.imgURL}', '${exp.vidURL}', '${exp.name}')">
+        <div style="position: relative;">
+          <img src="${exp.imgURL}" class="exp-thumb" alt="${exp.name}">
+          <div class="exp-overlay">
+            <div class="play-btn">▶</div>
+          </div>
+        </div>
+        <div class="exp-body">
+          <div class="exp-name">${exp.name}</div>
+          <div class="exp-date">${new Date(exp.created).toLocaleDateString('es-MX')}</div>
+        </div>
+      </div>
+    `).join('');
+
+  } catch(error) {
+    console.error('Error cargando galería:', error);
+    document.getElementById('loader').innerHTML = '<p>Error al cargar experiencias</p>';
+  }
+}
+
+function openExperience(shortURL, imgURL, vidURL, name) {
+  // Si hay shortURL, usar eso
+  if (shortURL) {
+    window.location.href = shortURL;
+    return;
+  }
+
+  // Si no, generar URL directa con los datos
+  const data = { name, img: imgURL, vid: vidURL };
+  const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
+  window.location.href = `viewer.html#${encoded}`;
+}
+
+loadGallery();
+</script>
+</body>
+</html>

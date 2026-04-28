@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NexusAR — Crea experiencias AR</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0a0515;
+  --purple: #b14cf5;
+  --pink: #ff4d9e;
+  --blue: #4d9eff;
+  --cyan: #4dffdf;
+  --glass: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --text: #ffffff;
+  --text-dim: rgba(255, 255, 255, 0.6);
+  --text-vdim: rgba(255, 255, 255, 0.4);
+}
+
+html, body { 
+  min-height: 100vh; 
+  background: var(--bg);
+  background-image: 
+    radial-gradient(ellipse at 20% 10%, rgba(177, 76, 245, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 60%, rgba(77, 158, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 90%, rgba(255, 77, 158, 0.1) 0%, transparent 50%);
+  color: var(--text); 
+  font-family: 'Sora', sans-serif;
+  overflow-x: hidden;
+}
+
+/* ── HEADER ── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.5rem 2rem; position: sticky; top: 0; z-index: 50;
+  backdrop-filter: blur(20px); background: rgba(10, 5, 21, 0.7);
+  border-bottom: 1px solid var(--glass-border);
+}
+.logo { 
+  font-size: 1.8rem; font-weight: 700; letter-spacing: -1px;
+  background: linear-gradient(135deg, var(--purple) 0%, var(--pink) 50%, var(--blue) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.nav-badge {
+  background: var(--glass); border: 1px solid var(--glass-border);
+  padding: 6px 16px; border-radius: 20px; font-size: 0.8rem;
+  color: var(--text-dim); backdrop-filter: blur(10px);
+}
+
+/* ── HERO ── */
+.hero {
+  text-align: center; padding: 4rem 2rem 3rem; position: relative;
+}
+.hero h1 { 
+  font-size: clamp(2.2rem, 7vw, 3.8rem); line-height: 1.1; margin-bottom: 1rem; font-weight: 700;
+}
+.hero h1 .gradient-text { 
+  background: linear-gradient(135deg, var(--purple), var(--pink), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero p { 
+  color: var(--text-dim); font-size: 1.05rem; max-width: 520px; 
+  margin: 0 auto 2.5rem; line-height: 1.7; font-weight: 300;
+}
+
+/* Orbs decorativos */
+.orb {
+  position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.3;
+  pointer-events: none; z-index: -1;
+}
+.orb1 { width: 300px; height: 300px; background: var(--purple); top: -100px; left: 10%; }
+.orb2 { width: 250px; height: 250px; background: var(--blue); bottom: -80px; right: 15%; }
+
+/* ── STEPS ── */
+.steps { 
+  display: flex; gap: 1rem; justify-content: center; margin-bottom: 3rem; 
+  flex-wrap: wrap; padding: 0 1rem;
+}
+.step {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 30px; padding: 8px 18px 8px 10px; font-size: 0.82rem;
+  color: var(--text-dim); backdrop-filter: blur(20px);
+  transition: all .3s;
+}
+.step:hover { 
+  background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2);
+  transform: translateY(-2px);
+}
+.step-num {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  color: white; display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 600; flex-shrink: 0;
+}
+.step-arrow { color: var(--text-vdim); font-size: 1.1rem; }
+
+/* ── MAIN CARD ── */
+main { max-width: 750px; margin: 0 auto; padding: 0 1.5rem 5rem; }
+
+.card {
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 24px; overflow: hidden; margin-bottom: 2rem;
+  backdrop-filter: blur(30px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transition: all .3s;
+}
+.card:hover { border-color: rgba(255,255,255,0.15); }
+
+.card-head {
+  padding: 1.5rem 1.8rem; border-bottom: 1px solid var(--glass-border);
+  display: flex; align-items: center; gap: 14px;
+}
+.card-icon {
+  width: 44px; height: 44px; border-radius: 14px;
+  background: linear-gradient(135deg, rgba(177,76,245,0.2), rgba(255,77,158,0.2));
+  border: 1px solid rgba(177,76,245,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; flex-shrink: 0;
+}
+.card-title { font-weight: 600; font-size: 1rem; }
+.card-sub { font-size: 0.82rem; color: var(--text-dim); margin-top: 3px; }
+.card-body { padding: 2rem 1.8rem; }
+
+/* ── DROP ZONE ── */
+.drop-zone {
+  border: 2px dashed var(--glass-border); border-radius: 16px;
+  padding: 3rem 1.5rem; text-align: center; cursor: pointer;
+  transition: all .3s; position: relative;
+  background: rgba(255,255,255,0.02);
+}
+.drop-zone:hover, .drop-zone.dragover { 
+  border-color: var(--purple); 
+  background: rgba(177,76,245,0.08);
+  box-shadow: 0 0 40px rgba(177,76,245,0.2);
+}
+.drop-icon { 
+  font-size: 2.5rem; margin-bottom: 1rem; display: block;
+  filter: drop-shadow(0 0 20px rgba(177,76,245,0.5));
+}
+.drop-label { font-size: 0.95rem; color: var(--text); font-weight: 500; }
+.drop-hint { font-size: 0.8rem; color: var(--text-vdim); margin-top: 6px; }
+.drop-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+
+/* Preview */
+.preview-img, .preview-vid {
+  width: 100%; border-radius: 14px; display: none; max-height: 280px; 
+  object-fit: contain; background: rgba(0,0,0,0.3);
+  border: 1px solid var(--glass-border);
+}
+.preview-name { 
+  font-size: 0.82rem; color: var(--text-dim); margin-top: 10px; 
+  display: none; text-align: center;
+}
+.change-btn {
+  margin-top: 12px; background: var(--glass); 
+  border: 1px solid var(--glass-border); border-radius: 20px;
+  padding: 6px 18px; font-size: 0.8rem; color: var(--text-dim); 
+  cursor: pointer; display: none; backdrop-filter: blur(10px);
+  transition: all .2s;
+}
+.change-btn:hover { 
+  border-color: var(--purple); color: var(--text);
+  background: rgba(177,76,245,0.1);
+}
+
+/* ── FIELD ── */
+.field-label { 
+  font-size: 0.85rem; font-weight: 500; color: var(--text); 
+  margin-bottom: 8px; display: block;
+}
+.field-input {
+  width: 100%; border: 1px solid var(--glass-border); border-radius: 14px;
+  padding: 12px 16px; font-size: 0.95rem; font-family: 'Sora', sans-serif;
+  color: var(--text); background: rgba(255,255,255,0.03); outline: none;
+  transition: all .3s; backdrop-filter: blur(10px);
+}
+.field-input:focus { 
+  border-color: var(--purple); background: rgba(255,255,255,0.05);
+  box-shadow: 0 0 20px rgba(177,76,245,0.2);
+}
+.field-input::placeholder { color: var(--text-vdim); }
+
+/* ── GENERATE BTN ── */
+.btn-generate {
+  width: 100%; padding: 1.1rem; border-radius: 16px; border: none;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  color: white; font-family: 'Sora', sans-serif;
+  font-size: 1.05rem; font-weight: 600; cursor: pointer; 
+  transition: all .3s;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  box-shadow: 0 8px 24px rgba(177,76,245,0.4);
+  position: relative; overflow: hidden;
+}
+.btn-generate::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, transparent, rgba(255,255,255,0.2), transparent);
+  transform: translateX(-100%); transition: transform .6s;
+}
+.btn-generate:hover::before { transform: translateX(100%); }
+.btn-generate:hover { 
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px rgba(177,76,245,0.5);
+}
+.btn-generate:disabled { 
+  background: var(--glass); color: var(--text-vdim); 
+  cursor: not-allowed; transform: none; box-shadow: none;
+}
+.btn-generate .arrow { transition: transform .2s; }
+.btn-generate:hover .arrow { transform: translateX(4px); }
+
+/* ── RESULTADO ── */
+.result-card {
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 24px; padding: 2.5rem 2rem; text-align: center; 
+  display: none; margin-top: 2rem; backdrop-filter: blur(30px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  animation: fadeUp .5s ease;
+}
+@keyframes fadeUp { 
+  from { opacity: 0; transform: translateY(30px); } 
+  to { opacity: 1; transform: translateY(0); } 
+}
+
+.result-title { 
+  font-size: 1.8rem; margin-bottom: 0.6rem; font-weight: 700;
+  background: linear-gradient(135deg, var(--purple), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.result-sub { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 2rem; }
+
+.qr-wrap {
+  width: 180px; height: 180px; margin: 0 auto 2rem;
+  border: 1px solid var(--glass-border); border-radius: 16px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center; 
+  background: white; padding: 12px;
+  box-shadow: 0 8px 24px rgba(177,76,245,0.3);
+}
+.qr-wrap img { width: 100%; height: 100%; object-fit: contain; }
+
+.link-box {
+  background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
+  border-radius: 12px; padding: 12px 16px; font-size: 0.82rem; 
+  color: var(--text-dim); word-break: break-all; margin-bottom: 1.5rem; 
+  font-family: 'Courier New', monospace; backdrop-filter: blur(10px);
+  display: none; /* Ocultar URL */
+}
+
+.btn-row { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; }
+.btn-copy, .btn-whatsapp, .btn-open, .btn-nuevo {
+  padding: 10px 24px; border-radius: 24px; font-size: 0.88rem; cursor: pointer;
+  font-family: 'Sora', sans-serif; font-weight: 500;
+  border: 1px solid var(--glass-border); transition: all .3s;
+  backdrop-filter: blur(10px);
+}
+.btn-copy { 
+  background: linear-gradient(135deg, var(--purple), var(--pink)); 
+  color: white; border: none;
+  box-shadow: 0 4px 16px rgba(177,76,245,0.3);
+}
+.btn-copy:hover { 
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(177,76,245,0.4);
+}
+.btn-whatsapp { 
+  background: #25D366; color: white; border: none;
+  box-shadow: 0 4px 16px rgba(37,211,102,0.3);
+}
+.btn-whatsapp:hover { 
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37,211,102,0.4);
+}
+.btn-open { 
+  background: linear-gradient(135deg, var(--cyan), var(--blue)); 
+  color: white; border: none;
+  box-shadow: 0 4px 16px rgba(77,158,255,0.3);
+}
+.btn-open:hover { 
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(77,158,255,0.4);
+}
+.btn-nuevo { background: var(--glass); color: var(--text-dim); }
+.btn-nuevo:hover { 
+  border-color: var(--purple); color: var(--text);
+  background: rgba(177,76,245,0.1);
+}
+
+.note-tip {
+  background: rgba(77,158,255,0.08); border: 1px solid rgba(77,158,255,0.2);
+  border-radius: 14px; padding: 14px 18px; font-size: 0.82rem; 
+  color: var(--text-dim); margin-top: 2rem; line-height: 1.7;
+  text-align: left; backdrop-filter: blur(10px);
+}
+.note-tip strong { color: var(--cyan); }
+
+/* ── FOOTER ── */
+footer { 
+  text-align: center; padding: 3rem 2rem; font-size: 0.8rem; 
+  color: var(--text-vdim); border-top: 1px solid var(--glass-border);
+}
+
+/* ── LOGIN ── */
+.login-screen {
+  position: fixed; inset: 0; background: var(--bg);
+  background-image: 
+    radial-gradient(ellipse at 20% 10%, rgba(177, 76, 245, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 60%, rgba(77, 158, 255, 0.15) 0%, transparent 50%);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 2rem;
+}
+.login-box {
+  background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 24px; padding: 3rem 2.5rem; max-width: 420px; width: 100%;
+  backdrop-filter: blur(30px); box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.login-logo {
+  font-size: 2.5rem; font-weight: 700; margin-bottom: 0.8rem; text-align: center;
+  background: linear-gradient(135deg, var(--purple), var(--pink), var(--cyan));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.login-subtitle {
+  text-align: center; color: var(--text-dim); margin-bottom: 2.5rem; font-size: 0.95rem;
+}
+.login-field {
+  margin-bottom: 1.2rem;
+}
+.login-label {
+  font-size: 0.85rem; font-weight: 500; color: var(--text); 
+  margin-bottom: 8px; display: block;
+}
+.login-input {
+  width: 100%; border: 1px solid var(--glass-border); border-radius: 14px;
+  padding: 12px 16px; font-size: 0.95rem; font-family: 'Sora', sans-serif;
+  color: var(--text); background: rgba(255,255,255,0.03); outline: none;
+  transition: all .3s; backdrop-filter: blur(10px);
+}
+.login-input:focus { 
+  border-color: var(--purple); background: rgba(255,255,255,0.05);
+  box-shadow: 0 0 20px rgba(177,76,245,0.2);
+}
+.login-btn {
+  width: 100%; padding: 1.1rem; border-radius: 14px; border: none;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  color: white; font-family: 'Sora', sans-serif; font-size: 1rem; font-weight: 600;
+  cursor: pointer; transition: all .3s; margin-top: 1rem;
+  box-shadow: 0 4px 16px rgba(177,76,245,0.4);
+}
+.login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(177,76,245,0.5);
+}
+.login-error {
+  background: rgba(255,90,90,0.1); border: 1px solid rgba(255,90,90,0.3);
+  border-radius: 12px; padding: 12px 16px; margin-top: 1rem;
+  font-size: 0.85rem; color: #ff5a5a; display: none;
+}
+.login-back {
+  text-align: center; margin-top: 1.5rem;
+}
+.login-back a {
+  color: var(--cyan); text-decoration: none; font-size: 0.88rem;
+  transition: color .2s;
+}
+.login-back a:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN SCREEN ── -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">NexusAR</div>
+    <p class="login-subtitle">Acceso solo para administradores</p>
+    
+    <div class="login-field">
+      <label class="login-label" for="username">Usuario</label>
+      <input class="login-input" type="text" id="username" placeholder="Ingresa tu usuario" autocomplete="username">
+    </div>
+    
+    <div class="login-field">
+      <label class="login-label" for="password">Contraseña</label>
+      <input class="login-input" type="password" id="password" placeholder="Ingresa tu contraseña" autocomplete="current-password">
+    </div>
+    
+    <button class="login-btn" onclick="login()">🔐 Iniciar sesión</button>
+    
+    <div style="text-align: center; margin: 1.2rem 0; color: var(--text-dim); font-size: 0.85rem;">
+      ───── o ─────
+    </div>
+    
+    <button class="login-btn" style="background: white; color: #1a1a1a; box-shadow: 0 2px 8px rgba(0,0,0,0.15);" onclick="loginWithGoogle(); return false;">
+      <svg style="width: 18px; height: 18px; margin-right: 8px; vertical-align: middle;" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        <path fill="none" d="M0 0h48v48H0z"/>
+      </svg>
+      Continuar con Google
+    </button>
+    
+    <div class="login-error" id="loginError">Usuario o contraseña incorrectos</div>
+    
+    <div class="login-back">
+      <a href="index.html">← Volver a la galería</a>
+    </div>
+  </div>
+</div>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+
+<header>
+  <div class="logo">NexusAR</div>
+  <div style="display: flex; gap: 12px; align-items: center;">
+    <a href="admin.html" class="nav-badge" style="text-decoration: none; cursor: pointer;">🔧 Admin</a>
+    <button class="nav-badge" style="background: rgba(255,90,90,0.1); border: 1px solid rgba(255,90,90,0.3); cursor: pointer;" onclick="logout()">🚪 Salir</button>
+  </div>
+</header>
+
+<div class="hero">
+  <h1>Realidad Aumentada<br>al <span class="gradient-text">siguiente nivel</span></h1>
+  <p>Vincula fotos con videos y compártelos. Tu cliente apunta su cámara a la imagen y el contenido cobra vida en AR.</p>
+
+  <div class="steps">
+    <div class="step"><span class="step-num">1</span> Sube foto</div>
+    <span class="step-arrow">›</span>
+    <div class="step"><span class="step-num">2</span> Sube video</div>
+    <span class="step-arrow">›</span>
+    <div class="step"><span class="step-num">3</span> Comparte</div>
+    <span class="step-arrow">›</span>
+    <div class="step"><span class="step-num">4</span> Experiencia AR ✨</div>
+  </div>
+</div>
+
+<main>
+
+  <!-- FOTO -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-icon">📸</div>
+      <div>
+        <div class="card-title">Imagen de referencia</div>
+        <div class="card-sub">La foto que se detectará con la cámara</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="drop-zone" id="dropImg" ondragover="doDragOver(event,'dropImg')" ondragleave="doDragLeave('dropImg')" ondrop="doDrop(event,'img')">
+        <input type="file" accept="image/*" id="imgInput" onchange="handleImg(event)">
+        <span class="drop-icon">🎯</span>
+        <div class="drop-label">Arrastra tu imagen aquí</div>
+        <div class="drop-hint">JPG, PNG, WEBP — máx 10 MB</div>
+      </div>
+      <img id="imgPreview" class="preview-img" alt="Preview">
+      <div id="imgName" class="preview-name"></div>
+      <button class="change-btn" id="imgChange" onclick="resetImg()">Cambiar</button>
+    </div>
+  </div>
+
+  <!-- VIDEO -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-icon">🎬</div>
+      <div>
+        <div class="card-title">Video en realidad aumentada</div>
+        <div class="card-sub">El contenido que aparecerá sobre la imagen</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="drop-zone" id="dropVid" ondragover="doDragOver(event,'dropVid')" ondragleave="doDragLeave('dropVid')" ondrop="doDrop(event,'vid')">
+        <input type="file" accept="video/*" id="vidInput" onchange="handleVid(event)">
+        <span class="drop-icon">🚀</span>
+        <div class="drop-label">Arrastra tu video aquí</div>
+        <div class="drop-hint">MP4, MOV, WEBM — sin límite de tamaño</div>
+      </div>
+      <video id="vidPreview" class="preview-vid" controls muted playsinline></video>
+      <div id="vidName" class="preview-name"></div>
+      <button class="change-btn" id="vidChange" onclick="resetVid()">Cambiar</button>
+    </div>
+  </div>
+
+  <!-- NOMBRE -->
+  <div class="card">
+    <div class="card-head">
+      <div class="card-icon">✨</div>
+      <div>
+        <div class="card-title">Nombre de la experiencia</div>
+        <div class="card-sub">Identifica este proyecto</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <label class="field-label" for="nameInput">Nombre</label>
+      <input class="field-input" id="nameInput" type="text" placeholder="ej. Evento Corporativo 2026">
+    </div>
+  </div>
+
+  <!-- GENERAR -->
+  <button class="btn-generate" id="genBtn" onclick="generate()" disabled>
+    Generar experiencia AR <span class="arrow">→</span>
+  </button>
+
+  <!-- RESULTADO -->
+  <div class="result-card" id="resultCard">
+    <div class="result-title">¡Experiencia lista! ✨</div>
+    <div class="result-sub">Comparte el link o escanea el QR</div>
+    <div class="qr-wrap"><img id="qrImage" alt="QR Code"></div>
+    <div class="link-box" id="resultLink">—</div>
+    <div class="btn-row">
+      <button class="btn-copy" onclick="copyLink()">📋 Copiar link</button>
+      <button class="btn-whatsapp" onclick="shareWhatsApp()">💬 WhatsApp</button>
+      <button class="btn-open" onclick="openLink()">🔗 Abrir link</button>
+      <button class="btn-nuevo" onclick="resetAll()">+ Nueva experiencia</button>
+    </div>
+    <div class="note-tip">
+      <strong>Instrucciones:</strong> El cliente abre el link, permite el acceso a la cámara y apunta a la foto. El video aparece automáticamente en realidad aumentada. Sin apps, sin complicaciones.
+    </div>
+  </div>
+
+</main>
+
+<footer>NexusAR — Experiencias AR de nueva generación</footer>
+
+<script>
+// ════════════════════════════════════════════
+//  AUTENTICACIÓN (Netlify Identity + Manual)
+// ════════════════════════════════════════════
+const ADMIN_USER = 'admin';
+const ADMIN_PASS = 'NexusAR2026!';
+const ADMIN_EMAIL = 'itech.gdl@gmail.com';
+
+function checkAuth() {
+  // Verificar autenticación de Netlify Identity (Google)
+  const netlifyUser = netlifyIdentity.currentUser();
+  if (netlifyUser && netlifyUser.email === ADMIN_EMAIL) {
+    sessionStorage.setItem('nexusAR_auth', 'true');
+    document.getElementById('loginScreen').style.display = 'none';
+    return;
+  }
+
+  // Verificar autenticación manual (usuario/contraseña)
+  const isAuthenticated = sessionStorage.getItem('nexusAR_auth') === 'true';
+  if (isAuthenticated) {
+    document.getElementById('loginScreen').style.display = 'none';
+  } else {
+    document.getElementById('loginScreen').style.display = 'flex';
+  }
+}
+
+function login() {
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  
+  if (username === ADMIN_USER && password === ADMIN_PASS) {
+    sessionStorage.setItem('nexusAR_auth', 'true');
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('loginError').style.display = 'none';
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+  }
+}
+
+function loginWithGoogle() {
+  netlifyIdentity.open('login');
+}
+
+// Netlify Identity listeners
+netlifyIdentity.on('login', user => {
+  if (user.email === ADMIN_EMAIL) {
+    sessionStorage.setItem('nexusAR_auth', 'true');
+    document.getElementById('loginScreen').style.display = 'none';
+    netlifyIdentity.close();
+  } else {
+    alert('❌ Solo el administrador autorizado puede acceder.');
+    netlifyIdentity.logout();
+  }
+});
+
+netlifyIdentity.on('logout', () => {
+  sessionStorage.removeItem('nexusAR_auth');
+  window.location.reload();
+});
+
+// Permitir login con Enter
+document.addEventListener('DOMContentLoaded', () => {
+  checkAuth();
+  
+  document.getElementById('password').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') login();
+  });
+  document.getElementById('username').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') document.getElementById('password').focus();
+  });
+});
+
+// ════════════════════════════════════════════
+//  CLOUDINARY CONFIG
+// ════════════════════════════════════════════
+let imgFile = null, vidFile = null;
+let generatedLink = '';
+
+const CLOUD_NAME = 'dc7luprai';
+const UPLOAD_PRESET = 'nexusar_unsigned';
+const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`;
+
+// Subir archivo a Cloudinary
+async function uploadToCloudinary(file, resourceType = 'auto') {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('upload_preset', UPLOAD_PRESET);
+  formData.append('folder', 'nexusar');
+  
+  const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+    method: 'POST',
+    body: formData
+  });
+  
+  if (!response.ok) throw new Error('Error al subir a Cloudinary');
+  const data = await response.json();
+  return data.secure_url; // URL del archivo subido
+}
+
+// ════════════════════════════════════════════
+//  INDEXEDDB — solo para metadata y URLs
+// ════════════════════════════════════════════
+const DB_NAME = 'nexusAR', DB_VER = 1, STORE = 'experiencias';
+let db = null;
+
+function openDB() {
+  return new Promise((res, rej) => {
+    if (db) return res(db);
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = e => e.target.result.createObjectStore(STORE);
+    req.onsuccess = e => { db = e.target.result; res(db); };
+    req.onerror = () => rej(req.error);
+  });
+}
+
+function dbSet(key, value) {
+  return openDB().then(db => new Promise((res, rej) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    const req = tx.objectStore(STORE).put(value, key);
+    req.onsuccess = () => res();
+    req.onerror = () => rej(req.error);
+  }));
+}
+
+// ── DRAG & DROP ──
+function doDragOver(e, id) { e.preventDefault(); document.getElementById(id).classList.add('dragover'); }
+function doDragLeave(id) { document.getElementById(id).classList.remove('dragover'); }
+function doDrop(e, type) {
+  e.preventDefault();
+  const id = type === 'img' ? 'dropImg' : 'dropVid';
+  document.getElementById(id).classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  if (type === 'img') processImg(file);
+  else processVid(file);
+}
+
+// ── IMAGEN ──
+function handleImg(e) { processImg(e.target.files[0]); }
+function processImg(file) {
+  if (!file) return;
+  imgFile = file;
+  const url = URL.createObjectURL(file);
+  const img = document.getElementById('imgPreview');
+  img.src = url;
+  img.style.display = 'block';
+  document.getElementById('dropImg').style.display = 'none';
+  document.getElementById('imgName').textContent = file.name;
+  document.getElementById('imgName').style.display = 'block';
+  document.getElementById('imgChange').style.display = 'inline-block';
+  checkReady();
+}
+function resetImg() {
+  imgFile = null;
+  document.getElementById('imgPreview').style.display = 'none';
+  document.getElementById('imgName').style.display = 'none';
+  document.getElementById('imgChange').style.display = 'none';
+  document.getElementById('dropImg').style.display = 'block';
+  document.getElementById('imgInput').value = '';
+  checkReady();
+}
+
+// ── VIDEO ──
+function handleVid(e) { processVid(e.target.files[0]); }
+function processVid(file) {
+  if (!file) return;
+  vidFile = file;
+  const url = URL.createObjectURL(file);
+  const vid = document.getElementById('vidPreview');
+  vid.src = url;
+  vid.style.display = 'block';
+  document.getElementById('dropVid').style.display = 'none';
+
+  const mb = (file.size / 1024 / 1024).toFixed(1);
+  document.getElementById('vidName').textContent = `${file.name} (${mb} MB)`;
+  document.getElementById('vidName').style.display = 'block';
+  document.getElementById('vidChange').style.display = 'inline-block';
+  checkReady();
+}
+function resetVid() {
+  vidFile = null;
+  document.getElementById('vidPreview').style.display = 'none';
+  document.getElementById('vidName').style.display = 'none';
+  document.getElementById('vidChange').style.display = 'none';
+  document.getElementById('dropVid').style.display = 'block';
+  document.getElementById('vidInput').value = '';
+  checkReady();
+}
+
+function checkReady() {
+  document.getElementById('genBtn').disabled = !(imgFile && vidFile);
+}
+
+// ── PROGRESO ──
+function setProgress(pct, label) {
+  const btn = document.getElementById('genBtn');
+  btn.innerHTML = `
+    <div style="width:100%">
+      <div style="margin-bottom:8px;font-size:0.88rem">${label}</div>
+      <div style="background:rgba(255,255,255,0.15);border-radius:8px;height:6px;overflow:hidden">
+        <div style="background:linear-gradient(90deg,var(--cyan),var(--purple));height:100%;width:${pct}%;transition:width .3s;border-radius:8px"></div>
+      </div>
+    </div>`;
+}
+
+// ── GENERAR ──
+async function generate() {
+  const name = document.getElementById('nameInput').value.trim() || 'Experiencia AR';
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+
+  try {
+    // Subir imagen a Cloudinary
+    setProgress(15, 'Subiendo imagen a la nube…');
+    const imgURL = await uploadToCloudinary(imgFile, 'image');
+
+    // Subir video a Cloudinary
+    const vidSizeMB = (vidFile.size / 1024 / 1024).toFixed(1);
+    setProgress(40, `Subiendo video (${vidSizeMB} MB)…`);
+    const vidURL = await uploadToCloudinary(vidFile, 'video');
+
+    setProgress(90, 'Generando link…');
+
+    // Codificar datos en la URL (Base64)
+    const data = {
+      name: name,
+      img: imgURL,
+      vid: vidURL
+    };
+    const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
+
+    const viewerURL = location.origin
+      + location.pathname.replace('creator.html','').replace(/\/?$/, '/')
+      + 'viewer.html#' + encoded;
+    generatedLink = viewerURL;
+
+    await new Promise(r => setTimeout(r, 300));
+
+    document.getElementById('resultCard').style.display = 'block';
+
+    // Generar QR con URL
+    const qrURL = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(viewerURL)}`;
+    document.getElementById('qrImage').src = qrURL;
+
+    // Guardar referencia para el panel admin (local)
+    const expData = {
+      id: Date.now(),
+      name: name,
+      imgURL: imgURL,
+      vidURL: vidURL,
+      viewerURL: viewerURL,
+      created: new Date().toLocaleString('es-MX')
+    };
+    
+    let experiences = JSON.parse(localStorage.getItem('nexusAR_experiences') || '[]');
+    experiences.unshift(expData);
+    localStorage.setItem('nexusAR_experiences', JSON.stringify(experiences.slice(0, 50)));
+
+    // Guardar en backend (galería pública)
+    try {
+      await fetch('/.netlify/functions/save-experience', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, imgURL, vidURL, viewerURL })
+      });
+    } catch(e) {
+      console.error('Error guardando en backend:', e);
+    }
+
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    btn.innerHTML = '✓ Crear otra experiencia';
+    btn.disabled = false;
+
+  } catch(err) {
+    console.error(err);
+    alert('Error al crear experiencia: ' + err.message);
+    btn.innerHTML = 'Generar experiencia AR <span class="arrow">→</span>';
+    btn.disabled = false;
+  }
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(generatedLink).then(() => {
+    const b = document.querySelector('.btn-copy');
+    const orig = b.textContent;
+    b.textContent = '✓ Copiado!';
+    setTimeout(() => b.textContent = orig, 2000);
+  });
+}
+
+function shareWhatsApp() {
+  const name = document.getElementById('nameInput').value.trim() || 'experiencia AR';
+  const msg = `✨ Te comparto una experiencia en realidad aumentada: ${name}\n\nAbre este link en tu celular, permite la cámara y apunta a la foto para verla cobrar vida 🚀\n\n${generatedLink}`;
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+}
+
+function openLink() {
+  if (generatedLink) {
+    window.open(generatedLink, '_blank');
+  }
+}
+
+function resetAll() {
+  resetImg(); resetVid();
+  document.getElementById('nameInput').value = '';
+  document.getElementById('resultCard').style.display = 'none';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function logout() {
+  if (confirm('¿Cerrar sesión?')) {
+    sessionStorage.removeItem('nexusAR_auth');
+    window.location.reload();
+  }
+}
+
+openDB();
+</script>
+</body>
+</html>

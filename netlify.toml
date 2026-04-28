@@ -1,0 +1,11 @@
+[build]
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Habilitar Netlify Identity
+[functions]
+  external_node_modules = ["netlify-identity-widget"]
