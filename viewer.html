@@ -367,7 +367,6 @@ let detecting = false;
 let detectionInterval = null;
 
 async function startScanner() {
-  // Funciona con o sin payload (modo libre o modo específico)
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -376,9 +375,11 @@ async function startScanner() {
     document.getElementById('cam').srcObject = stream;
     document.getElementById('cam2').srcObject = stream;
     goTo('scanner');
-    
-    // Siempre construir histograma y escanear (nunca saltar la detección)
-    await buildRefHistogram();
+
+    // SIEMPRE usar modo escaneo libre contra todas las experiencias
+    // (nunca auto-detectar desde URL para evitar falsos positivos)
+    refHistogram = null;
+    payload = null;
     startDetection();
   } catch(err) {
     showToast('No se pudo acceder a la cámara. Revisa los permisos.');
