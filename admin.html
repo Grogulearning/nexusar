@@ -170,7 +170,7 @@ const CLOUD_NAME = 'dc7luprai';
 // Cargar experiencias desde el backend
 async function loadExperiences() {
   try {
-    const response = await fetch('/.netlify/functions/get-experiences');
+    const response = await fetch('https://nexusar-backend-production.up.railway.app/api/get-experiences');
     const experiences = await response.json();
     
     document.getElementById('totalExp').textContent = experiences.length;
@@ -218,7 +218,7 @@ async function deleteExperience(id, imgURL, vidURL, cardIdx) {
 
   try {
     // Eliminar del backend (incluye Cloudinary)
-    const response = await fetch('/.netlify/functions/delete-experience', {
+    const response = await fetch('https://nexusar-backend-production.up.railway.app/api/delete-experience', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, imgURL, vidURL })
