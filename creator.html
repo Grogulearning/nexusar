@@ -789,7 +789,7 @@ async function generate() {
 
     // Guardar en backend (galería pública)
     try {
-      await fetch('/.netlify/functions/save-experience', {
+      await fetch('https://nexusar-backend-production.up.railway.app/api/save-experience', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, imgURL, vidURL, viewerURL })
