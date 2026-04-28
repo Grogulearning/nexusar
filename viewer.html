@@ -446,7 +446,7 @@ function hashSimilarity(a, b) {
 function getHistogram(ctx, w, h) { return pHash(ctx, w, h); }
 function histogramSimilarity(a, b) { return hashSimilarity(a, b); }
 
-const MATCH_THRESHOLD = 0.85; // 85% similitud mínima
+const MATCH_THRESHOLD = 0.75; // 75% similitud mínima
 
 async function buildRefHistogram() {
   if (!payload || !payload.imgURL) {
