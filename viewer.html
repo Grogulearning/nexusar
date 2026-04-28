@@ -401,52 +401,40 @@ function backToScanner() {
 }
 
 // ════════════════════════════════════════════
-//  DETECCIÓN - HASH PERCEPTUAL (pHash)
-//  Mucho más preciso que histogramas
+//  DETECCIÓN - pHash MEJORADO (16x16 + multi-frame)
 // ════════════════════════════════════════════
-let refHistogram = null; // lo mantenemos por compatibilidad
+let refHistogram = null;
 let frameCanvas, frameCtx, refCanvas, refCtx;
 
-// pHash: convierte imagen a hash de 64 bits
+const HASH_SIZE = 16; // 16x16 = 256 bits (más preciso que 8x8)
+const MATCH_THRESHOLD = 0.70;
+const FRAMES_TO_AVERAGE = 3; // Promediar 3 frames para estabilizar
+
 function pHash(ctx, w, h) {
-  // Reducir a 8x8 en escala de grises
   const small = document.createElement('canvas');
-  small.width = 8; small.height = 8;
+  small.width = HASH_SIZE; small.height = HASH_SIZE;
   const sCtx = small.getContext('2d');
-  sCtx.drawImage(ctx.canvas, 0, 0, w, h, 0, 0, 8, 8);
-  const data = sCtx.getImageData(0, 0, 8, 8).data;
+  sCtx.drawImage(ctx.canvas, 0, 0, w, h, 0, 0, HASH_SIZE, HASH_SIZE);
+  const data = sCtx.getImageData(0, 0, HASH_SIZE, HASH_SIZE).data;
   
-  // Convertir a grises
   const grays = [];
-  for (let i = 0; i < 64; i++) {
+  for (let i = 0; i < HASH_SIZE * HASH_SIZE; i++) {
     const idx = i * 4;
     grays.push(0.299*data[idx] + 0.587*data[idx+1] + 0.114*data[idx+2]);
   }
-  
-  // Calcular promedio
-  const avg = grays.reduce((a, b) => a + b, 0) / 64;
-  
-  // Generar hash: 1 si píxel > promedio, 0 si no
+  const avg = grays.reduce((a, b) => a + b, 0) / grays.length;
   return grays.map(g => g > avg ? 1 : 0);
 }
 
-// Distancia Hamming entre dos hashes (cuántos bits difieren)
-function hammingDistance(a, b) {
-  let diff = 0;
-  for (let i = 0; i < 64; i++) if (a[i] !== b[i]) diff++;
-  return diff;
-}
-
-// Similitud: 0 = totalmente diferente, 1 = idéntico
 function hashSimilarity(a, b) {
-  return 1 - (hammingDistance(a, b) / 64);
+  let same = 0;
+  for (let i = 0; i < a.length; i++) if (a[i] === b[i]) same++;
+  return same / a.length;
 }
 
-// Función legacy para compatibilidad
+// Funciones legacy para compatibilidad
 function getHistogram(ctx, w, h) { return pHash(ctx, w, h); }
 function histogramSimilarity(a, b) { return hashSimilarity(a, b); }
-
-const MATCH_THRESHOLD = 0.75; // 75% similitud mínima
 
 async function buildRefHistogram() {
   if (!payload || !payload.imgURL) {
@@ -537,11 +525,19 @@ async function detectAnyExperience(experiences) {
     
     await new Promise(res => {
       img.onload = () => {
-        testCanvas.width = 64;
-        testCanvas.height = 64;
+        testCanvas.width = 64; testCanvas.height = 64;
         testCtx.drawImage(img, 0, 0, 64, 64);
-        const hash = pHash(testCtx, 64, 64);
-        expHashes.push({ exp, hash });
+        // Generar múltiples hashes con variaciones de zoom
+        const hashes = [];
+        // Hash normal
+        hashes.push(pHash(testCtx, 64, 64));
+        // Hash recortado (zona central 80%)
+        const c2 = document.createElement('canvas');
+        c2.width = 64; c2.height = 64;
+        const c2x = c2.getContext('2d');
+        c2x.drawImage(testCanvas, 6, 6, 52, 52, 0, 0, 64, 64);
+        hashes.push(pHash(c2x, 64, 64));
+        expHashes.push({ exp, hashes });
         res();
       };
       img.onerror = res;
@@ -549,23 +545,34 @@ async function detectAnyExperience(experiences) {
   }
   
   badge.textContent = `Apunta a una imagen AR...`;
-  
+  let frameBuffer = [];
+
   detectionInterval = setInterval(() => {
     if (!detecting) return;
     const vid = document.getElementById('cam');
     if (vid.readyState < 2) return;
     
+    // Capturar frame actual
     frameCtx.drawImage(vid, 0, 0, 64, 64);
     const frameHash = pHash(frameCtx, 64, 64);
-    
+    frameBuffer.push(frameHash);
+    if (frameBuffer.length > FRAMES_TO_AVERAGE) frameBuffer.shift();
+
     let bestScore = 0;
     let bestExp = null;
 
-    for (const { exp, hash } of expHashes) {
-      const score = hashSimilarity(hash, frameHash);
-      if (score > bestScore) {
-        bestScore = score;
-        bestExp = exp;
+    for (const { exp, hashes } of expHashes) {
+      // Comparar contra cada variación del hash de la experiencia
+      for (const refHash of hashes) {
+        // Comparar contra todos los frames en el buffer
+        let frameScore = 0;
+        for (const fh of frameBuffer) {
+          frameScore = Math.max(frameScore, hashSimilarity(refHash, fh));
+        }
+        if (frameScore > bestScore) {
+          bestScore = frameScore;
+          bestExp = exp;
+        }
       }
     }
 
@@ -577,18 +584,12 @@ async function detectAnyExperience(experiences) {
       badge.classList.add('found');
       clearInterval(detectionInterval);
       detecting = false;
-      
-      payload = {
-        name: bestExp.name,
-        imgURL: bestExp.imgURL,
-        vidURL: bestExp.vidURL
-      };
+      payload = { name: bestExp.name, imgURL: bestExp.imgURL, vidURL: bestExp.vidURL };
       expName = bestExp.name;
       document.getElementById('arTitle').textContent = expName;
-      
       setTimeout(activateAR, 600);
     }
-  }, 400);
+  }, 300);
 }
 
 async function activateAR() {
