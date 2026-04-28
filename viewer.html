@@ -401,46 +401,65 @@ function backToScanner() {
 }
 
 // ════════════════════════════════════════════
-//  DETECCIÓN DE IMAGEN
+//  DETECCIÓN DE IMAGEN - MÉTODO MEJORADO
 // ════════════════════════════════════════════
 let refHistogram = null;
-const MATCH_THRESHOLD = 0.50; // bajado para mejor detección
+const MATCH_THRESHOLD = 0.82; // Alto para evitar falsos positivos
 let frameCanvas, frameCtx, refCanvas, refCtx;
 
-async function buildRefHistogram() {
-  // Si no hay payload, modo escaneo libre (sin imagen de referencia específica)
-  if (!payload || !payload.imgURL) {
-    refHistogram = null; // Sin histograma de referencia
-    return;
-  }
-  
-  refCanvas = document.createElement('canvas');
-  refCtx = refCanvas.getContext('2d');
-  const img = new Image();
-  img.crossOrigin = 'anonymous'; // Para permitir CORS con Cloudinary
-  img.src = payload.imgURL;
-  await new Promise(res => img.onload = res);
-  refCanvas.width = 64; refCanvas.height = 64;
-  refCtx.drawImage(img, 0, 0, 64, 64);
-  refHistogram = getHistogram(refCtx, 64, 64);
-}
-
+// Obtener histograma dividido en 4 zonas para mejor precisión
 function getHistogram(ctx, w, h) {
   const data = ctx.getImageData(0, 0, w, h).data;
-  const hist = new Float32Array(64).fill(0);
-  for (let i = 0; i < data.length; i += 4) {
-    const lum = Math.round((0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2]) / 4);
-    hist[lum]++;
+  // 4 zonas x 32 bins = 128 valores
+  const zones = [
+    new Float32Array(32).fill(0), // top-left
+    new Float32Array(32).fill(0), // top-right
+    new Float32Array(32).fill(0), // bottom-left
+    new Float32Array(32).fill(0), // bottom-right
+  ];
+  const hw = w / 2, hh = h / 2;
+  let counts = [0, 0, 0, 0];
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      const lum = Math.floor((0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2]) / 8); // 0-31
+      const zone = (y < hh ? 0 : 2) + (x < hw ? 0 : 1);
+      zones[zone][lum]++;
+      counts[zone]++;
+    }
   }
-  const total = w * h;
-  for (let i = 0; i < 64; i++) hist[i] /= total;
+
+  // Normalizar cada zona
+  const hist = new Float32Array(128);
+  for (let z = 0; z < 4; z++) {
+    for (let b = 0; b < 32; b++) {
+      hist[z * 32 + b] = counts[z] > 0 ? zones[z][b] / counts[z] : 0;
+    }
+  }
   return hist;
 }
 
 function histogramSimilarity(a, b) {
   let sum = 0;
-  for (let i = 0; i < 64; i++) sum += Math.min(a[i], b[i]);
-  return sum;
+  for (let i = 0; i < 128; i++) sum += Math.min(a[i], b[i]);
+  return sum / 4; // normalizar por 4 zonas
+}
+
+async function buildRefHistogram() {
+  if (!payload || !payload.imgURL) {
+    refHistogram = null;
+    return;
+  }
+  refCanvas = document.createElement('canvas');
+  refCtx = refCanvas.getContext('2d');
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.src = payload.imgURL;
+  await new Promise(res => { img.onload = res; img.onerror = res; });
+  refCanvas.width = 64; refCanvas.height = 64;
+  refCtx.drawImage(img, 0, 0, 64, 64);
+  refHistogram = getHistogram(refCtx, 64, 64);
 }
 
 function startDetection() {
@@ -506,7 +525,6 @@ async function detectAnyExperience(experiences) {
   let expHistograms = [];
   const badge = document.getElementById('statusBadge');
   
-  // Pre-cargar histogramas de todas las experiencias
   badge.textContent = 'Preparando detección...';
   for (const exp of experiences) {
     const testCanvas = document.createElement('canvas');
@@ -528,9 +546,8 @@ async function detectAnyExperience(experiences) {
     });
   }
   
-  badge.textContent = `Buscando entre ${experiences.length} imágenes...`;
+  badge.textContent = `Apunta a una imagen AR...`;
   
-  // Buscar match continuamente
   detectionInterval = setInterval(() => {
     if (!detecting) return;
     const vid = document.getElementById('cam');
@@ -539,28 +556,35 @@ async function detectAnyExperience(experiences) {
     frameCtx.drawImage(vid, 0, 0, 64, 64);
     const framHist = getHistogram(frameCtx, 64, 64);
     
-    // Probar contra todas las experiencias
+    let bestScore = 0;
+    let bestExp = null;
+
     for (const { exp, hist } of expHistograms) {
       const score = histogramSimilarity(hist, framHist);
-      
-      if (score >= MATCH_THRESHOLD) {
-        badge.textContent = `✓ ${exp.name} detectada!`;
-        badge.classList.add('found');
-        clearInterval(detectionInterval);
-        detecting = false;
-        
-        // Cargar esta experiencia
-        payload = {
-          name: exp.name,
-          imgURL: exp.imgURL,
-          vidURL: exp.vidURL
-        };
-        expName = exp.name;
-        document.getElementById('arTitle').textContent = expName;
-        
-        setTimeout(activateAR, 600);
-        return;
+      if (score > bestScore) {
+        bestScore = score;
+        bestExp = exp;
       }
+    }
+
+    const pct = Math.round(bestScore * 100);
+    badge.textContent = `Escaneando… ${pct}%`;
+
+    if (bestScore >= MATCH_THRESHOLD) {
+      badge.textContent = `✓ ¡Imagen detectada!`;
+      badge.classList.add('found');
+      clearInterval(detectionInterval);
+      detecting = false;
+      
+      payload = {
+        name: bestExp.name,
+        imgURL: bestExp.imgURL,
+        vidURL: bestExp.vidURL
+      };
+      expName = bestExp.name;
+      document.getElementById('arTitle').textContent = expName;
+      
+      setTimeout(activateAR, 600);
     }
   }, 400);
 }
