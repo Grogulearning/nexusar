@@ -155,8 +155,7 @@ main { max-width: 1400px; margin: 0 auto; padding: 0 2rem 5rem; }
 
 <div class="hero">
   <h1>Descubre contenido oculto<br>en <span class="gradient-text">Realidad Aumentada</span></h1>
-  <p>Escanea las imágenes de nuestra galería y descubre videos que cobran vida en AR.</p>
-  <div class="hero-badge">📱 Sin apps, directo desde tu navegador</div>
+  <p>Escanea las imágenes que te compartamos y descubre videos que cobran vida en AR.</p>
   
   <a href="viewer.html" class="header-btn" style="margin-top: 2rem; display: inline-block; font-size: 1.1rem; padding: 14px 32px;">
     📸 Escanear imagen
@@ -164,68 +163,12 @@ main { max-width: 1400px; margin: 0 auto; padding: 0 2rem 5rem; }
 </div>
 
 <main>
-  <h2 class="section-title" id="galleryTitle" style="display:none">Experiencias disponibles</h2>
-
-  <div class="loader" id="loader">
-    <div class="loader-spinner"></div>
-    <p>Cargando experiencias…</p>
-  </div>
-
-  <div class="gallery" id="gallery" style="display:none"></div>
+  <!-- La galería solo está disponible para el administrador -->
 </main>
 
 <script>
-async function loadGallery() {
-  try {
-    const response = await fetch('https://nexusar-backend-production.up.railway.app/api/get-experiences');
-    const experiences = await response.json();
-
-    document.getElementById('loader').style.display = 'none';
-
-    if (experiences.length === 0) {
-      // Si no hay experiencias, no mostrar nada (el hero ya dice todo)
-      return;
-    }
-
-    document.getElementById('galleryTitle').style.display = 'block';
-    document.getElementById('gallery').style.display = 'grid';
-
-    const gallery = document.getElementById('gallery');
-    gallery.innerHTML = experiences.map(exp => `
-      <div class="exp-card" onclick="openExperience('${exp.viewerURL || ''}', '${exp.imgURL}', '${exp.vidURL}', '${exp.name}')">
-        <div style="position: relative;">
-          <img src="${exp.imgURL}" class="exp-thumb" alt="${exp.name}">
-          <div class="exp-overlay">
-            <div class="play-btn">▶</div>
-          </div>
-        </div>
-        <div class="exp-body">
-          <div class="exp-name">${exp.name}</div>
-          <div class="exp-date">${new Date(exp.created).toLocaleDateString('es-MX')}</div>
-        </div>
-      </div>
-    `).join('');
-
-  } catch(error) {
-    console.error('Error cargando galería:', error);
-    document.getElementById('loader').innerHTML = '<p>Error al cargar experiencias</p>';
-  }
-}
-
-function openExperience(viewerURL, imgURL, vidURL, name) {
-  // Si hay viewerURL, usar eso
-  if (viewerURL) {
-    window.location.href = viewerURL;
-    return;
-  }
-
-  // Si no, generar URL directa con los datos
-  const data = { name, img: imgURL, vid: vidURL };
-  const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
-  window.location.href = `viewer.html#${encoded}`;
-}
-
-loadGallery();
+// La galería está deshabilitada en la página pública
+// Solo el administrador puede verla desde admin.html
 </script>
 </body>
 </html>
