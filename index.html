@@ -177,7 +177,7 @@ main { max-width: 1400px; margin: 0 auto; padding: 0 2rem 5rem; }
 <script>
 async function loadGallery() {
   try {
-    const response = await fetch('/.netlify/functions/get-experiences');
+    const response = await fetch('https://nexusar-backend-production.up.railway.app/api/get-experiences');
     const experiences = await response.json();
 
     document.getElementById('loader').style.display = 'none';
