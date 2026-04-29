@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NexusAR — Crea experiencias AR</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
-<!-- MindAR compiler desde GitHub (versión UMD compatible) -->
-<script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.2/dist/mindar-image.prod.js"></script>
+<!-- MindAR v1.1.4 - versión UMD con compilador incluido -->
+<script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/dist/mindar-image.prod.js"></script>
 <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -770,16 +770,19 @@ async function compileMind(imageFile) {
   mindStatus.innerHTML = '⚙️ Compilando tracking AR... esto puede tardar unos segundos';
 
   try {
-    // Esperar a que TF.js y MindAR carguen completamente
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 800));
 
-    // Verificar que el compilador esté disponible
-    const Compiler = window?.MINDAR?.IMAGE?.Compiler;
+    // v1.1.4 expone window.MINDAR.IMAGE.Compiler
+    const Compiler = window?.MINDAR?.IMAGE?.Compiler 
+                  || window?.MINDAR?.Compiler
+                  || window?.MindARCompiler;
+
     if (!Compiler) {
-      throw new Error(`Compilador no disponible. MINDAR: ${JSON.stringify(Object.keys(window.MINDAR || {}))}`);
+      console.error('MINDAR disponible:', window.MINDAR);
+      throw new Error('Compilador no disponible');
     }
 
-    // Crear elemento <img> (MindAR requiere HTMLImageElement)
+    // MindAR v1.1.4 requiere HTMLImageElement
     const img = new Image();
     await new Promise((res, rej) => {
       img.onload = res;
@@ -789,8 +792,7 @@ async function compileMind(imageFile) {
 
     const compiler = new Compiler();
     await compiler.compileImageTargets([img], (progress) => {
-      const pct = Math.round(progress * 100);
-      mindStatus.innerHTML = `⚙️ Compilando tracking AR... ${pct}%`;
+      mindStatus.innerHTML = `⚙️ Compilando... ${Math.round(progress * 100)}%`;
     });
 
     const buffer = await compiler.exportData();
@@ -804,7 +806,7 @@ async function compileMind(imageFile) {
     console.error('Error compilando .mind:', e);
     mindStatus.style.borderColor = 'rgba(255,165,0,0.4)';
     mindStatus.style.color = '#ffaa00';
-    mindStatus.innerHTML = '⚠️ Tracking automático no disponible en este navegador. Funcionará con detección básica.';
+    mindStatus.innerHTML = '⚠️ Tracking automático no disponible. Funcionará con detección básica.';
     mindBlob = null;
   }
 }
