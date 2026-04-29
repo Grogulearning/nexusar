@@ -539,6 +539,31 @@ footer {
     </div>
   </div>
 
+  <!-- ARCHIVO .MIND (TRACKING PROFESIONAL) -->
+  <div class="upload-card">
+    <div class="card-header">
+      <div class="card-icon">🧠</div>
+      <div>
+        <div class="card-title">Archivo de tracking (opcional)</div>
+        <div class="card-sub">Sube el archivo .mind para tracking profesional con MindAR</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div style="background:rgba(77,255,223,0.05); border:1px solid rgba(77,255,223,0.2); border-radius:12px; padding:1rem; margin-bottom:1rem; font-size:0.82rem; color:var(--cyan); line-height:1.6;">
+        💡 Genera tu archivo .mind en:<br>
+        <a href="https://hiukim.github.io/mind-ar-js-doc/tools/compile" target="_blank" style="color:var(--cyan); font-weight:600;">hiukim.github.io/mind-ar-js-doc/tools/compile</a><br>
+        Sube tu imagen trigger → Start → Descarga el .mind
+      </div>
+      <label class="drop-zone" id="dropMind" onclick="document.getElementById('mindInput').click()">
+        <span class="drop-icon">🧠</span>
+        <span class="drop-text">Clic para subir archivo .mind</span>
+        <span class="drop-sub">Opcional — mejora el tracking</span>
+        <input type="file" id="mindInput" accept=".mind" style="display:none" onchange="handleMind(event)">
+      </label>
+      <div id="mindName" style="display:none; font-size:0.85rem; color:var(--cyan); margin-top:0.5rem; text-align:center;"></div>
+    </div>
+  </div>
+
   <!-- SELECTOR DE FORMA -->
   <div class="upload-card">
     <div class="card-header">
@@ -550,7 +575,11 @@ footer {
     </div>
     <div class="card-body">
       <div class="shape-grid">
-        <div class="shape-option selected" data-shape="circle" onclick="selectShape(this)">
+        <div class="shape-option selected" data-shape="none" onclick="selectShape(this)">
+          <div class="shape-preview shape-square" style="border-radius:8px"></div>
+          <span>Sin forma</span>
+        </div>
+        <div class="shape-option" data-shape="circle" onclick="selectShape(this)">
           <div class="shape-preview shape-circle"></div>
           <span>Circular</span>
         </div>
@@ -565,10 +594,6 @@ footer {
         <div class="shape-option" data-shape="diamond" onclick="selectShape(this)">
           <div class="shape-preview shape-diamond"></div>
           <span>Diamante</span>
-        </div>
-        <div class="shape-option" data-shape="square" onclick="selectShape(this)">
-          <div class="shape-preview shape-square"></div>
-          <span>Cuadrado</span>
         </div>
         <div class="shape-option" data-shape="star" onclick="selectShape(this)">
           <div class="shape-preview shape-star"></div>
@@ -810,7 +835,16 @@ function setProgress(pct, label) {
 }
 
 // ── FORMA DEL VIDEO ──
-let selectedShape = 'circle';
+let selectedShape = 'none';
+let mindFile = null;
+
+function handleMind(e) {
+  mindFile = e.target.files[0];
+  if (!mindFile) return;
+  document.getElementById('mindName').textContent = '✓ ' + mindFile.name;
+  document.getElementById('mindName').style.display = 'block';
+  document.getElementById('dropMind').style.borderColor = 'var(--cyan)';
+}
 
 function selectShape(el) {
   document.querySelectorAll('.shape-option').forEach(o => o.classList.remove('selected'));
@@ -834,6 +868,13 @@ async function generate() {
     setProgress(40, `Subiendo video (${vidSizeMB} MB)…`);
     const vidURL = await uploadToCloudinary(vidFile, 'video');
 
+    // Subir archivo .mind si existe (tracking profesional)
+    let mindURL = null;
+    if (mindFile) {
+      setProgress(75, 'Subiendo archivo de tracking...');
+      mindURL = await uploadToCloudinary(mindFile, 'raw');
+    }
+
     setProgress(90, 'Generando link…');
 
     // Codificar datos en la URL (Base64) incluyendo la forma
@@ -841,7 +882,8 @@ async function generate() {
       name: name,
       img: imgURL,
       vid: vidURL,
-      shape: selectedShape
+      shape: selectedShape,
+      mind: mindURL
     };
     const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
 
