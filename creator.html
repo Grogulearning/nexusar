@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NexusAR — Crea experiencias AR</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
-<!-- MindAR v1.1.4 - versión UMD con compilador incluido -->
-<script src="https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.1.4/dist/mindar-image.prod.js"></script>
 <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -505,23 +503,30 @@ footer {
     </div>
   </div>
 
-  <!-- TRACKING AUTOMÁTICO -->
+  <!-- ARCHIVO .MIND (TRACKING PROFESIONAL) -->
   <div class="upload-card">
     <div class="card-header">
       <div class="card-icon">🧠</div>
       <div>
-        <div class="card-title">Tracking con MindAR</div>
-        <div class="card-sub">Se genera automáticamente al subir tu imagen trigger</div>
+        <div class="card-title">Archivo de tracking MindAR</div>
+        <div class="card-sub">Opcional — para que el video siga la imagen en tiempo real</div>
       </div>
     </div>
     <div class="card-body">
-      <div id="mindStatus" style="
-        background: rgba(77,255,223,0.05); border: 1px solid rgba(77,255,223,0.15);
-        border-radius: 12px; padding: 1rem; font-size: 0.85rem; 
-        color: var(--text-dim); text-align: center; line-height: 1.6;
-      ">
-        ⏳ Sube una imagen trigger para generar el tracking automáticamente
+      <div style="background:rgba(77,255,223,0.05); border:1px solid rgba(77,255,223,0.2); border-radius:12px; padding:1rem; margin-bottom:1rem; font-size:0.82rem; color:var(--cyan); line-height:1.7;">
+        <strong>Pasos:</strong><br>
+        1. Ve a <a href="https://hiukim.github.io/mind-ar-js-doc/tools/compile" target="_blank" style="color:var(--cyan); font-weight:600; text-decoration:underline;">MindAR Compiler ↗</a><br>
+        2. Sube la misma imagen trigger que subiste arriba<br>
+        3. Espera que compile y descarga el archivo <strong>targets.mind</strong><br>
+        4. Súbelo aquí abajo
       </div>
+      <label class="drop-zone" id="dropMind" onclick="document.getElementById('mindInput').click()" style="cursor:pointer;">
+        <span class="drop-icon">🧠</span>
+        <div class="drop-label">Clic para subir archivo .mind</div>
+        <div class="drop-hint">Archivo targets.mind — Opcional</div>
+        <input type="file" id="mindInput" accept=".mind" style="display:none" onchange="handleMind(event)">
+      </label>
+      <div id="mindName" style="display:none; font-size:0.85rem; color:var(--cyan); margin-top:0.8rem; text-align:center; padding:8px; background:rgba(77,255,223,0.05); border-radius:8px;"></div>
     </div>
   </div>
 
@@ -702,9 +707,6 @@ function processImg(file) {
   document.getElementById('imgName').style.display = 'block';
   document.getElementById('imgChange').style.display = 'inline-block';
   checkReady();
-
-  // Compilar .mind automáticamente
-  compileMind(file);
 }
 function resetImg() {
   imgFile = null;
@@ -761,54 +763,15 @@ function setProgress(pct, label) {
 
 // ── COMPILAR .MIND AUTOMÁTICAMENTE ──
 let mindBlob = null;
+let mindFile = null;
 
-// Compilar imagen a .mind automáticamente
-async function compileMind(imageFile) {
-  const mindStatus = document.getElementById('mindStatus');
-  mindStatus.style.borderColor = 'rgba(177,76,245,0.4)';
-  mindStatus.style.color = 'var(--purple)';
-  mindStatus.innerHTML = '⚙️ Compilando tracking AR... esto puede tardar unos segundos';
-
-  try {
-    await new Promise(r => setTimeout(r, 800));
-
-    // v1.1.4 expone window.MINDAR.IMAGE.Compiler
-    const Compiler = window?.MINDAR?.IMAGE?.Compiler 
-                  || window?.MINDAR?.Compiler
-                  || window?.MindARCompiler;
-
-    if (!Compiler) {
-      console.error('MINDAR disponible:', window.MINDAR);
-      throw new Error('Compilador no disponible');
-    }
-
-    // MindAR v1.1.4 requiere HTMLImageElement
-    const img = new Image();
-    await new Promise((res, rej) => {
-      img.onload = res;
-      img.onerror = rej;
-      img.src = URL.createObjectURL(imageFile);
-    });
-
-    const compiler = new Compiler();
-    await compiler.compileImageTargets([img], (progress) => {
-      mindStatus.innerHTML = `⚙️ Compilando... ${Math.round(progress * 100)}%`;
-    });
-
-    const buffer = await compiler.exportData();
-    mindBlob = new Blob([buffer]);
-
-    mindStatus.style.borderColor = 'rgba(77,255,223,0.4)';
-    mindStatus.style.color = 'var(--cyan)';
-    mindStatus.innerHTML = '✅ Tracking AR listo — el video seguirá la imagen automáticamente';
-
-  } catch(e) {
-    console.error('Error compilando .mind:', e);
-    mindStatus.style.borderColor = 'rgba(255,165,0,0.4)';
-    mindStatus.style.color = '#ffaa00';
-    mindStatus.innerHTML = '⚠️ Tracking automático no disponible. Funcionará con detección básica.';
-    mindBlob = null;
-  }
+function handleMind(e) {
+  mindFile = e.target.files[0];
+  if (!mindFile) return;
+  const nameEl = document.getElementById('mindName');
+  nameEl.textContent = '✅ ' + mindFile.name + ' listo para subir';
+  nameEl.style.display = 'block';
+  document.getElementById('dropMind').style.borderColor = 'var(--cyan)';
 }
 
 // ── GENERAR ──
@@ -827,7 +790,7 @@ async function generate() {
     setProgress(40, `Subiendo video (${vidSizeMB} MB)…`);
     const vidURL = await uploadToCloudinary(vidFile, 'video');
 
-    // Subir archivo .mind (compilado automáticamente o manual)
+    // Subir archivo .mind si existe
     let mindURL = null;
     const mindToUpload = mindBlob ? new File([mindBlob], 'targets.mind') : mindFile;
     if (mindToUpload) {
