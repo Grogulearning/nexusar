@@ -323,7 +323,8 @@ function loadExperience() {
       payload = {
         name: data.name,
         imgURL: data.img,
-        vidURL: data.vid
+        vidURL: data.vid,
+        shape: data.shape || 'circle'
       };
       expName = data.name;
       document.getElementById('expName').textContent = expName;
@@ -401,14 +402,31 @@ function backToScanner() {
 }
 
 // ════════════════════════════════════════════
-//  DETECCIÓN - pHash MEJORADO (16x16 + multi-frame)
+//  DETECCIÓN - pHash ROBUSTO (papel + pantalla)
 // ════════════════════════════════════════════
 let refHistogram = null;
 let frameCanvas, frameCtx, refCanvas, refCtx;
 
-const HASH_SIZE = 16; // 16x16 = 256 bits (más preciso que 8x8)
-const MATCH_THRESHOLD = 0.70;
-const FRAMES_TO_AVERAGE = 3; // Promediar 3 frames para estabilizar
+const HASH_SIZE = 16;
+const MATCH_THRESHOLD = 0.68; // Más tolerante para cubrir papel y pantalla
+const FRAMES_TO_AVERAGE = 3;
+
+// Normalizar brillo/contraste antes de hacer el hash
+function normalizeImageData(data, length) {
+  let min = 255, max = 0;
+  for (let i = 0; i < length; i += 4) {
+    const lum = 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
+    if (lum < min) min = lum;
+    if (lum > max) max = lum;
+  }
+  const range = max - min || 1;
+  const normalized = [];
+  for (let i = 0; i < length; i += 4) {
+    const lum = 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2];
+    normalized.push((lum - min) / range * 255);
+  }
+  return normalized;
+}
 
 function pHash(ctx, w, h) {
   const small = document.createElement('canvas');
@@ -416,12 +434,9 @@ function pHash(ctx, w, h) {
   const sCtx = small.getContext('2d');
   sCtx.drawImage(ctx.canvas, 0, 0, w, h, 0, 0, HASH_SIZE, HASH_SIZE);
   const data = sCtx.getImageData(0, 0, HASH_SIZE, HASH_SIZE).data;
-  
-  const grays = [];
-  for (let i = 0; i < HASH_SIZE * HASH_SIZE; i++) {
-    const idx = i * 4;
-    grays.push(0.299*data[idx] + 0.587*data[idx+1] + 0.114*data[idx+2]);
-  }
+
+  // Normalizar para resistir cambios de brillo (papel vs pantalla)
+  const grays = normalizeImageData(data, data.length);
   const avg = grays.reduce((a, b) => a + b, 0) / grays.length;
   return grays.map(g => g > avg ? 1 : 0);
 }
@@ -432,15 +447,11 @@ function hashSimilarity(a, b) {
   return same / a.length;
 }
 
-// Funciones legacy para compatibilidad
 function getHistogram(ctx, w, h) { return pHash(ctx, w, h); }
 function histogramSimilarity(a, b) { return hashSimilarity(a, b); }
 
 async function buildRefHistogram() {
-  if (!payload || !payload.imgURL) {
-    refHistogram = null;
-    return;
-  }
+  if (!payload || !payload.imgURL) { refHistogram = null; return; }
   refCanvas = document.createElement('canvas');
   refCtx = refCanvas.getContext('2d');
   const img = new Image();
@@ -450,6 +461,40 @@ async function buildRefHistogram() {
   refCanvas.width = 64; refCanvas.height = 64;
   refCtx.drawImage(img, 0, 0, 64, 64);
   refHistogram = pHash(refCtx, 64, 64);
+}
+
+// Generar múltiples variaciones del hash para cubrir papel y pantalla
+function generateHashVariations(canvas) {
+  const ctx = canvas.getContext('2d');
+  const hashes = [];
+
+  // 1. Hash normal
+  hashes.push(pHash(ctx, canvas.width, canvas.height));
+
+  // 2. Zoom central 80% (ignora bordes)
+  const c2 = document.createElement('canvas');
+  c2.width = 64; c2.height = 64;
+  const c2x = c2.getContext('2d');
+  c2x.drawImage(canvas, 6, 6, 52, 52, 0, 0, 64, 64);
+  hashes.push(pHash(c2x, 64, 64));
+
+  // 3. Más contraste (simula pantalla brillante)
+  const c3 = document.createElement('canvas');
+  c3.width = 64; c3.height = 64;
+  const c3x = c3.getContext('2d');
+  c3x.filter = 'contrast(150%) brightness(110%)';
+  c3x.drawImage(canvas, 0, 0, 64, 64);
+  hashes.push(pHash(c3x, 64, 64));
+
+  // 4. Menos contraste (simula papel opaco)
+  const c4 = document.createElement('canvas');
+  c4.width = 64; c4.height = 64;
+  const c4x = c4.getContext('2d');
+  c4x.filter = 'contrast(80%) brightness(90%)';
+  c4x.drawImage(canvas, 0, 0, 64, 64);
+  hashes.push(pHash(c4x, 64, 64));
+
+  return hashes;
 }
 
 function startDetection() {
@@ -500,16 +545,8 @@ async function detectAnyExperience(experiences) {
       img.onload = () => {
         testCanvas.width = 64; testCanvas.height = 64;
         testCtx.drawImage(img, 0, 0, 64, 64);
-        // Generar múltiples hashes con variaciones de zoom
-        const hashes = [];
-        // Hash normal
-        hashes.push(pHash(testCtx, 64, 64));
-        // Hash recortado (zona central 80%)
-        const c2 = document.createElement('canvas');
-        c2.width = 64; c2.height = 64;
-        const c2x = c2.getContext('2d');
-        c2x.drawImage(testCanvas, 6, 6, 52, 52, 0, 0, 64, 64);
-        hashes.push(pHash(c2x, 64, 64));
+        // Generar 4 variaciones: normal, zoom, pantalla brillante, papel opaco
+        const hashes = generateHashVariations(testCanvas);
         expHashes.push({ exp, hashes });
         res();
       };
@@ -525,7 +562,6 @@ async function detectAnyExperience(experiences) {
     const vid = document.getElementById('cam');
     if (vid.readyState < 2) return;
     
-    // Capturar frame actual
     frameCtx.drawImage(vid, 0, 0, 64, 64);
     const frameHash = pHash(frameCtx, 64, 64);
     frameBuffer.push(frameHash);
@@ -535,16 +571,13 @@ async function detectAnyExperience(experiences) {
     let bestExp = null;
 
     for (const { exp, hashes } of expHashes) {
-      // Comparar contra cada variación del hash de la experiencia
       for (const refHash of hashes) {
-        // Comparar contra todos los frames en el buffer
-        let frameScore = 0;
         for (const fh of frameBuffer) {
-          frameScore = Math.max(frameScore, hashSimilarity(refHash, fh));
-        }
-        if (frameScore > bestScore) {
-          bestScore = frameScore;
-          bestExp = exp;
+          const score = hashSimilarity(refHash, fh);
+          if (score > bestScore) {
+            bestScore = score;
+            bestExp = exp;
+          }
         }
       }
     }
@@ -557,7 +590,12 @@ async function detectAnyExperience(experiences) {
       badge.classList.add('found');
       clearInterval(detectionInterval);
       detecting = false;
-      payload = { name: bestExp.name, imgURL: bestExp.imgURL, vidURL: bestExp.vidURL };
+      payload = { 
+        name: bestExp.name, 
+        imgURL: bestExp.imgURL, 
+        vidURL: bestExp.vidURL,
+        shape: bestExp.shape || 'circle'
+      };
       expName = bestExp.name;
       document.getElementById('arTitle').textContent = expName;
       setTimeout(activateAR, 600);
@@ -568,28 +606,35 @@ async function detectAnyExperience(experiences) {
 async function activateAR() {
   const arVid = document.getElementById('arVid');
   if (payload.vidURL) {
-    arVid.src = payload.vidURL; // URL de Cloudinary
-    arVid.muted = false; // Sonido activado
+    arVid.src = payload.vidURL;
+    arVid.muted = false;
   }
+
+  // Aplicar forma al video
+  const shape = payload.shape || 'circle';
+  const shapes = {
+    circle:  'border-radius: 50%;',
+    rounded: 'border-radius: 24px;',
+    hexagon: 'clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);',
+    diamond: 'clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);',
+    square:  'border-radius: 4px;',
+    star:    'clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);'
+  };
+  arVid.style.cssText += shapes[shape] || shapes.circle;
+
   goTo('arplayer');
   arVid.classList.add('show');
   document.getElementById('arRing').classList.add('show');
-  
-  // Intentar reproducir con sonido
-  try { 
-    await arVid.play(); 
-  } catch(e) { 
-    // Si falla (algunos navegadores bloquean autoplay con sonido)
-    // intentar sin sonido y mostrar mensaje
-    console.log('Autoplay bloqueado, intentando sin sonido');
-    arVid.muted = true; 
+
+  try {
+    await arVid.play();
+  } catch(e) {
+    arVid.muted = true;
     await arVid.play();
     showToast('⚠️ Toca el video para activar sonido');
   }
-  
-  if (!arVid.muted) {
-    showToast('¡Video AR activado! 🎉');
-  }
+
+  if (!arVid.muted) showToast('¡Video AR activado! 🎉');
 }
 
 let muted = false;
