@@ -287,55 +287,7 @@ function startMindAR() {
 
   const shape = payload.shape || 'none';
 
-  // Generar el elemento de video según la forma
-  // En A-Frame usamos diferentes primitivas para cada forma
-  let videoElement = '';
-  
-  if (shape === 'circle') {
-    // Círculo perfecto - usar a-circle
-    videoElement = `
-      <a-circle
-        src="#arVideo"
-        radius="0.5"
-        position="0 0 0.001"
-        rotation="0 0 0"
-      ></a-circle>`;
-  } else if (shape === 'rounded') {
-    // Redondeado - plano normal con radio pequeño en shader
-    videoElement = `
-      <a-plane
-        src="#arVideo"
-        position="0 0 0.001"
-        width="1" height="0.552"
-        rotation="0 0 0"
-        material="shader: flat; src: #arVideo; side: front; transparent: true; opacity: 1;"
-      ></a-plane>`;
-  } else if (shape === 'hexagon') {
-    videoElement = `
-      <a-entity
-        position="0 0 0.001"
-        geometry="primitive: circle; radius: 0.5; segments: 6;"
-        material="shader: flat; src: #arVideo; side: front;"
-      ></a-entity>`;
-  } else if (shape === 'diamond') {
-    videoElement = `
-      <a-entity
-        position="0 0 0.001"
-        geometry="primitive: circle; radius: 0.5; segments: 4; thetaStart: 45;"
-        material="shader: flat; src: #arVideo; side: front;"
-      ></a-entity>`;
-  } else {
-    // Sin forma (default) - video rectangular normal
-    videoElement = `
-      <a-video
-        src="#arVideo"
-        position="0 0 0.001"
-        width="1" height="0.552"
-        rotation="0 0 0"
-      ></a-video>`;
-  }
-
-  // Crear escena A-Frame con MindAR
+  // Siempre usar a-video (más estable con MindAR)
   const sceneHTML = `
     <a-scene
       id="mindScene"
@@ -361,7 +313,13 @@ function startMindAR() {
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        ${videoElement}
+        <a-video 
+          src="#arVideo" 
+          position="0 0 0.001" 
+          width="1" 
+          height="0.552"
+          rotation="0 0 0"
+        ></a-video>
       </a-entity>
     </a-scene>
   `;
