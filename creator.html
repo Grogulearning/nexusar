@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NexusAR — Crea experiencias AR</title>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image.prod.js"></script>
 <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -301,42 +302,6 @@ main { max-width: 750px; margin: 0 auto; padding: 0 1.5rem 5rem; }
 }
 .note-tip strong { color: var(--cyan); }
 
-/* ── SELECTOR DE FORMA ── */
-.shape-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
-}
-.shape-option {
-  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
-  padding: 1rem; border-radius: 16px; cursor: pointer;
-  border: 2px solid var(--glass-border); background: var(--glass);
-  transition: all .3s; font-size: 0.82rem; color: var(--text-dim);
-}
-.shape-option:hover {
-  border-color: var(--purple); color: var(--text);
-  background: rgba(177,76,245,0.1);
-}
-.shape-option.selected {
-  border-color: var(--purple); color: var(--text);
-  background: rgba(177,76,245,0.15);
-  box-shadow: 0 0 16px rgba(177,76,245,0.3);
-}
-.shape-preview {
-  width: 56px; height: 56px;
-  background: linear-gradient(135deg, var(--purple), var(--pink));
-}
-.shape-circle { border-radius: 50%; }
-.shape-rounded { border-radius: 16px; }
-.shape-hexagon { 
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-}
-.shape-diamond { 
-  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
-}
-.shape-square { border-radius: 4px; }
-.shape-star {
-  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
-}
-
 /* ── FOOTER ── */
 footer { 
   text-align: center; padding: 3rem 2rem; font-size: 0.8rem; 
@@ -539,66 +504,22 @@ footer {
     </div>
   </div>
 
-  <!-- ARCHIVO .MIND (TRACKING PROFESIONAL) -->
+  <!-- TRACKING AUTOMÁTICO -->
   <div class="upload-card">
     <div class="card-header">
       <div class="card-icon">🧠</div>
       <div>
-        <div class="card-title">Archivo de tracking (opcional)</div>
-        <div class="card-sub">Sube el archivo .mind para tracking profesional con MindAR</div>
+        <div class="card-title">Tracking con MindAR</div>
+        <div class="card-sub">Se genera automáticamente al subir tu imagen trigger</div>
       </div>
     </div>
     <div class="card-body">
-      <div style="background:rgba(77,255,223,0.05); border:1px solid rgba(77,255,223,0.2); border-radius:12px; padding:1rem; margin-bottom:1rem; font-size:0.82rem; color:var(--cyan); line-height:1.6;">
-        💡 Genera tu archivo .mind en:<br>
-        <a href="https://hiukim.github.io/mind-ar-js-doc/tools/compile" target="_blank" style="color:var(--cyan); font-weight:600;">hiukim.github.io/mind-ar-js-doc/tools/compile</a><br>
-        Sube tu imagen trigger → Start → Descarga el .mind
-      </div>
-      <label class="drop-zone" id="dropMind" onclick="document.getElementById('mindInput').click()">
-        <span class="drop-icon">🧠</span>
-        <span class="drop-text">Clic para subir archivo .mind</span>
-        <span class="drop-sub">Opcional — mejora el tracking</span>
-        <input type="file" id="mindInput" accept=".mind" style="display:none" onchange="handleMind(event)">
-      </label>
-      <div id="mindName" style="display:none; font-size:0.85rem; color:var(--cyan); margin-top:0.5rem; text-align:center;"></div>
-    </div>
-  </div>
-
-  <!-- SELECTOR DE FORMA -->
-  <div class="upload-card">
-    <div class="card-header">
-      <div class="card-icon">🎨</div>
-      <div>
-        <div class="card-title">Forma del video AR</div>
-        <div class="card-sub">Elige cómo se verá el video al activarse</div>
-      </div>
-    </div>
-    <div class="card-body">
-      <div class="shape-grid">
-        <div class="shape-option selected" data-shape="none" onclick="selectShape(this)">
-          <div class="shape-preview shape-square" style="border-radius:8px"></div>
-          <span>Sin forma</span>
-        </div>
-        <div class="shape-option" data-shape="circle" onclick="selectShape(this)">
-          <div class="shape-preview shape-circle"></div>
-          <span>Circular</span>
-        </div>
-        <div class="shape-option" data-shape="rounded" onclick="selectShape(this)">
-          <div class="shape-preview shape-rounded"></div>
-          <span>Redondeado</span>
-        </div>
-        <div class="shape-option" data-shape="hexagon" onclick="selectShape(this)">
-          <div class="shape-preview shape-hexagon"></div>
-          <span>Hexágono</span>
-        </div>
-        <div class="shape-option" data-shape="diamond" onclick="selectShape(this)">
-          <div class="shape-preview shape-diamond"></div>
-          <span>Diamante</span>
-        </div>
-        <div class="shape-option" data-shape="star" onclick="selectShape(this)">
-          <div class="shape-preview shape-star"></div>
-          <span>Estrella</span>
-        </div>
+      <div id="mindStatus" style="
+        background: rgba(77,255,223,0.05); border: 1px solid rgba(77,255,223,0.15);
+        border-radius: 12px; padding: 1rem; font-size: 0.85rem; 
+        color: var(--text-dim); text-align: center; line-height: 1.6;
+      ">
+        ⏳ Sube una imagen trigger para generar el tracking automáticamente
       </div>
     </div>
   </div>
@@ -780,6 +701,9 @@ function processImg(file) {
   document.getElementById('imgName').style.display = 'block';
   document.getElementById('imgChange').style.display = 'inline-block';
   checkReady();
+
+  // Compilar .mind automáticamente
+  compileMind(file);
 }
 function resetImg() {
   imgFile = null;
@@ -834,22 +758,41 @@ function setProgress(pct, label) {
     </div>`;
 }
 
-// ── FORMA DEL VIDEO ──
-let selectedShape = 'none';
-let mindFile = null;
+// ── COMPILAR .MIND AUTOMÁTICAMENTE ──
+let mindBlob = null;
 
-function handleMind(e) {
-  mindFile = e.target.files[0];
-  if (!mindFile) return;
-  document.getElementById('mindName').textContent = '✓ ' + mindFile.name;
-  document.getElementById('mindName').style.display = 'block';
-  document.getElementById('dropMind').style.borderColor = 'var(--cyan)';
-}
+// Compilar imagen a .mind automáticamente
+async function compileMind(imageFile) {
+  const mindStatus = document.getElementById('mindStatus');
+  try {
+    mindStatus.style.borderColor = 'rgba(177,76,245,0.4)';
+    mindStatus.style.color = 'var(--purple)';
+    mindStatus.innerHTML = '⚙️ Compilando tracking AR... (puede tardar 10-30 segundos)';
 
-function selectShape(el) {
-  document.querySelectorAll('.shape-option').forEach(o => o.classList.remove('selected'));
-  el.classList.add('selected');
-  selectedShape = el.dataset.shape;
+    // Crear imagen bitmap desde el archivo
+    const imageBitmap = await createImageBitmap(imageFile);
+
+    // Usar el compilador de MindAR
+    const compiler = new MINDAR.IMAGE.Compiler();
+    await compiler.compileImageTargets([imageBitmap], (progress) => {
+      mindStatus.innerHTML = `⚙️ Compilando tracking AR... ${Math.round(progress * 100)}%`;
+    });
+
+    // Exportar como archivo .mind
+    const buffer = await compiler.exportData();
+    mindBlob = new Blob([buffer]);
+
+    mindStatus.style.borderColor = 'rgba(77,255,223,0.4)';
+    mindStatus.style.color = 'var(--cyan)';
+    mindStatus.innerHTML = '✅ Tracking AR listo — el video seguirá la imagen automáticamente';
+
+  } catch(e) {
+    console.error('Error compilando .mind:', e);
+    mindStatus.style.borderColor = 'rgba(255,90,90,0.3)';
+    mindStatus.style.color = '#ff5a5a';
+    mindStatus.innerHTML = '⚠️ No se pudo generar el tracking automático. Funcionará con detección básica.';
+    mindBlob = null;
+  }
 }
 
 // ── GENERAR ──
@@ -868,11 +811,12 @@ async function generate() {
     setProgress(40, `Subiendo video (${vidSizeMB} MB)…`);
     const vidURL = await uploadToCloudinary(vidFile, 'video');
 
-    // Subir archivo .mind si existe (tracking profesional)
+    // Subir archivo .mind (compilado automáticamente o manual)
     let mindURL = null;
-    if (mindFile) {
+    const mindToUpload = mindBlob ? new File([mindBlob], 'targets.mind') : mindFile;
+    if (mindToUpload) {
       setProgress(75, 'Subiendo archivo de tracking...');
-      mindURL = await uploadToCloudinary(mindFile, 'raw');
+      mindURL = await uploadToCloudinary(mindToUpload, 'raw');
     }
 
     setProgress(90, 'Generando link…');
@@ -882,7 +826,6 @@ async function generate() {
       name: name,
       img: imgURL,
       vid: vidURL,
-      shape: selectedShape,
       mind: mindURL
     };
     const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
@@ -916,10 +859,10 @@ async function generate() {
 
     // Guardar en backend (galería pública)
     try {
-      await fetch('https://nexusar-backend-production.up.railway.app/api/save-experience', {
+      await fetch('https://nexusar-backend.onrender.com/api/save-experience', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, imgURL, vidURL, viewerURL, shape: selectedShape })
+        body: JSON.stringify({ name, imgURL, vidURL, viewerURL })
       });
     } catch(e) {
       console.error('Error guardando en backend:', e);
