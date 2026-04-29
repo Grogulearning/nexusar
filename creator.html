@@ -301,6 +301,42 @@ main { max-width: 750px; margin: 0 auto; padding: 0 1.5rem 5rem; }
 }
 .note-tip strong { color: var(--cyan); }
 
+/* ── SELECTOR DE FORMA ── */
+.shape-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;
+}
+.shape-option {
+  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+  padding: 1rem; border-radius: 16px; cursor: pointer;
+  border: 2px solid var(--glass-border); background: var(--glass);
+  transition: all .3s; font-size: 0.82rem; color: var(--text-dim);
+}
+.shape-option:hover {
+  border-color: var(--purple); color: var(--text);
+  background: rgba(177,76,245,0.1);
+}
+.shape-option.selected {
+  border-color: var(--purple); color: var(--text);
+  background: rgba(177,76,245,0.15);
+  box-shadow: 0 0 16px rgba(177,76,245,0.3);
+}
+.shape-preview {
+  width: 56px; height: 56px;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+}
+.shape-circle { border-radius: 50%; }
+.shape-rounded { border-radius: 16px; }
+.shape-hexagon { 
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+.shape-diamond { 
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+.shape-square { border-radius: 4px; }
+.shape-star {
+  clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+}
+
 /* ── FOOTER ── */
 footer { 
   text-align: center; padding: 3rem 2rem; font-size: 0.8rem; 
@@ -500,6 +536,45 @@ footer {
     <div class="card-body">
       <label class="field-label" for="nameInput">Nombre</label>
       <input class="field-input" id="nameInput" type="text" placeholder="ej. Evento Corporativo 2026">
+    </div>
+  </div>
+
+  <!-- SELECTOR DE FORMA -->
+  <div class="upload-card">
+    <div class="card-header">
+      <div class="card-icon">🎨</div>
+      <div>
+        <div class="card-title">Forma del video AR</div>
+        <div class="card-sub">Elige cómo se verá el video al activarse</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="shape-grid">
+        <div class="shape-option selected" data-shape="circle" onclick="selectShape(this)">
+          <div class="shape-preview shape-circle"></div>
+          <span>Circular</span>
+        </div>
+        <div class="shape-option" data-shape="rounded" onclick="selectShape(this)">
+          <div class="shape-preview shape-rounded"></div>
+          <span>Redondeado</span>
+        </div>
+        <div class="shape-option" data-shape="hexagon" onclick="selectShape(this)">
+          <div class="shape-preview shape-hexagon"></div>
+          <span>Hexágono</span>
+        </div>
+        <div class="shape-option" data-shape="diamond" onclick="selectShape(this)">
+          <div class="shape-preview shape-diamond"></div>
+          <span>Diamante</span>
+        </div>
+        <div class="shape-option" data-shape="square" onclick="selectShape(this)">
+          <div class="shape-preview shape-square"></div>
+          <span>Cuadrado</span>
+        </div>
+        <div class="shape-option" data-shape="star" onclick="selectShape(this)">
+          <div class="shape-preview shape-star"></div>
+          <span>Estrella</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -734,6 +809,15 @@ function setProgress(pct, label) {
     </div>`;
 }
 
+// ── FORMA DEL VIDEO ──
+let selectedShape = 'circle';
+
+function selectShape(el) {
+  document.querySelectorAll('.shape-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedShape = el.dataset.shape;
+}
+
 // ── GENERAR ──
 async function generate() {
   const name = document.getElementById('nameInput').value.trim() || 'Experiencia AR';
@@ -752,11 +836,12 @@ async function generate() {
 
     setProgress(90, 'Generando link…');
 
-    // Codificar datos en la URL (Base64)
+    // Codificar datos en la URL (Base64) incluyendo la forma
     const data = {
       name: name,
       img: imgURL,
-      vid: vidURL
+      vid: vidURL,
+      shape: selectedShape
     };
     const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
 
@@ -792,7 +877,7 @@ async function generate() {
       await fetch('https://nexusar-backend-production.up.railway.app/api/save-experience', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, imgURL, vidURL, viewerURL })
+        body: JSON.stringify({ name, imgURL, vidURL, viewerURL, shape: selectedShape })
       });
     } catch(e) {
       console.error('Error guardando en backend:', e);
