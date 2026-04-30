@@ -301,6 +301,21 @@ main { max-width: 750px; margin: 0 auto; padding: 0 1.5rem 5rem; }
 }
 .note-tip strong { color: var(--cyan); }
 
+/* ── SELECTOR DE FORMA ── */
+.shape-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.shape-option {
+  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+  padding: 1rem 0.5rem; border-radius: 16px; cursor: pointer;
+  border: 2px solid var(--glass-border); background: var(--glass);
+  transition: all .3s; font-size: 0.78rem; color: var(--text-dim); text-align: center;
+}
+.shape-option:hover { border-color: var(--purple); color: var(--text); background: rgba(177,76,245,0.1); }
+.shape-option.selected { border-color: var(--purple); color: var(--text); background: rgba(177,76,245,0.15); box-shadow: 0 0 16px rgba(177,76,245,0.3); }
+.shape-preview {
+  width: 56px; height: 56px;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+}
+
 /* ── FOOTER ── */
 footer { 
   text-align: center; padding: 3rem 2rem; font-size: 0.8rem; 
@@ -527,6 +542,45 @@ footer {
         <input type="file" id="mindInput" accept=".mind" style="display:none" onchange="handleMind(event)">
       </label>
       <div id="mindName" style="display:none; font-size:0.85rem; color:var(--cyan); margin-top:0.8rem; text-align:center; padding:8px; background:rgba(77,255,223,0.05); border-radius:8px;"></div>
+    </div>
+  </div>
+
+  <!-- SELECTOR DE FRAME -->
+  <div class="upload-card">
+    <div class="card-header">
+      <div class="card-icon">🎨</div>
+      <div>
+        <div class="card-title">Forma del video</div>
+        <div class="card-sub">Elige cómo se verá el video al activarse</div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="shape-grid">
+        <div class="shape-option selected" data-shape="none" onclick="selectShape(this)">
+          <div class="shape-preview" style="border-radius:8px"></div>
+          <span>Sin forma</span>
+        </div>
+        <div class="shape-option" data-shape="circle" onclick="selectShape(this)">
+          <div class="shape-preview" style="border-radius:50%"></div>
+          <span>Círculo</span>
+        </div>
+        <div class="shape-option" data-shape="rect-h" onclick="selectShape(this)">
+          <div class="shape-preview" style="border-radius:6px; height:35px; width:62px;"></div>
+          <span>Rect. horizontal</span>
+        </div>
+        <div class="shape-option" data-shape="rect-v" onclick="selectShape(this)">
+          <div class="shape-preview" style="border-radius:6px; height:56px; width:32px;"></div>
+          <span>Rect. vertical</span>
+        </div>
+        <div class="shape-option" data-shape="square" onclick="selectShape(this)">
+          <div class="shape-preview" style="border-radius:4px"></div>
+          <span>Cuadrado</span>
+        </div>
+        <div class="shape-option" data-shape="rounded" onclick="selectShape(this)">
+          <div class="shape-preview" style="border-radius:20px"></div>
+          <span>Redondeado</span>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -761,9 +815,15 @@ function setProgress(pct, label) {
     </div>`;
 }
 
-// ── COMPILAR .MIND AUTOMÁTICAMENTE ──
-let mindBlob = null;
+// ── FORMA DEL VIDEO ──
+let selectedShape = 'none';
 let mindFile = null;
+
+function selectShape(el) {
+  document.querySelectorAll('.shape-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedShape = el.dataset.shape;
+}
 
 function handleMind(e) {
   mindFile = e.target.files[0];
@@ -805,7 +865,8 @@ async function generate() {
       name: name,
       img: imgURL,
       vid: vidURL,
-      mind: mindURL
+      mind: mindURL,
+      shape: selectedShape
     };
     const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
 
@@ -841,7 +902,7 @@ async function generate() {
       await fetch('https://nexusar-backend.onrender.com/api/save-experience', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, imgURL, vidURL, viewerURL })
+        body: JSON.stringify({ name, imgURL, vidURL, viewerURL, mindURL, shape: selectedShape })
       });
     } catch(e) {
       console.error('Error guardando en backend:', e);
