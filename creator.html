@@ -518,33 +518,6 @@ footer {
     </div>
   </div>
 
-  <!-- ARCHIVO .MIND (TRACKING PROFESIONAL) -->
-  <div class="upload-card">
-    <div class="card-header">
-      <div class="card-icon">🧠</div>
-      <div>
-        <div class="card-title">Archivo de tracking MindAR</div>
-        <div class="card-sub">Opcional — para que el video siga la imagen en tiempo real</div>
-      </div>
-    </div>
-    <div class="card-body">
-      <div style="background:rgba(77,255,223,0.05); border:1px solid rgba(77,255,223,0.2); border-radius:12px; padding:1rem; margin-bottom:1rem; font-size:0.82rem; color:var(--cyan); line-height:1.7;">
-        <strong>Pasos:</strong><br>
-        1. Ve a <a href="https://hiukim.github.io/mind-ar-js-doc/tools/compile" target="_blank" style="color:var(--cyan); font-weight:600; text-decoration:underline;">MindAR Compiler ↗</a><br>
-        2. Sube la misma imagen trigger que subiste arriba<br>
-        3. Espera que compile y descarga el archivo <strong>targets.mind</strong><br>
-        4. Súbelo aquí abajo
-      </div>
-      <label class="drop-zone" id="dropMind" onclick="document.getElementById('mindInput').click()" style="cursor:pointer;">
-        <span class="drop-icon">🧠</span>
-        <div class="drop-label">Clic para subir archivo .mind</div>
-        <div class="drop-hint">Archivo targets.mind — Opcional</div>
-        <input type="file" id="mindInput" accept=".mind" style="display:none" onchange="handleMind(event)">
-      </label>
-      <div id="mindName" style="display:none; font-size:0.85rem; color:var(--cyan); margin-top:0.8rem; text-align:center; padding:8px; background:rgba(77,255,223,0.05); border-radius:8px;"></div>
-    </div>
-  </div>
-
   <!-- SELECTOR DE FRAME -->
   <div class="upload-card">
     <div class="card-header">
@@ -817,21 +790,11 @@ function setProgress(pct, label) {
 
 // ── FORMA DEL VIDEO ──
 let selectedShape = 'none';
-let mindFile = null;
 
 function selectShape(el) {
   document.querySelectorAll('.shape-option').forEach(o => o.classList.remove('selected'));
   el.classList.add('selected');
   selectedShape = el.dataset.shape;
-}
-
-function handleMind(e) {
-  mindFile = e.target.files[0];
-  if (!mindFile) return;
-  const nameEl = document.getElementById('mindName');
-  nameEl.textContent = '✅ ' + mindFile.name + ' listo para subir';
-  nameEl.style.display = 'block';
-  document.getElementById('dropMind').style.borderColor = 'var(--cyan)';
 }
 
 // ── GENERAR ──
@@ -850,14 +813,6 @@ async function generate() {
     setProgress(40, `Subiendo video (${vidSizeMB} MB)…`);
     const vidURL = await uploadToCloudinary(vidFile, 'video');
 
-    // Subir archivo .mind si existe
-    let mindURL = null;
-    const mindToUpload = mindBlob ? new File([mindBlob], 'targets.mind') : mindFile;
-    if (mindToUpload) {
-      setProgress(75, 'Subiendo archivo de tracking...');
-      mindURL = await uploadToCloudinary(mindToUpload, 'raw');
-    }
-
     setProgress(90, 'Generando link…');
 
     // Codificar datos en la URL (Base64) incluyendo la forma
@@ -865,7 +820,6 @@ async function generate() {
       name: name,
       img: imgURL,
       vid: vidURL,
-      mind: mindURL,
       shape: selectedShape
     };
     const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
@@ -902,7 +856,7 @@ async function generate() {
       await fetch('https://nexusar-backend.onrender.com/api/save-experience', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, imgURL, vidURL, viewerURL, mindURL, shape: selectedShape })
+        body: JSON.stringify({ name, imgURL, vidURL, viewerURL, shape: selectedShape })
       });
     } catch(e) {
       console.error('Error guardando en backend:', e);
